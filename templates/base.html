@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Comsulting - Sistema de Administración{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>Comsulting Admin</h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('index') }}">Inicio</a></li>
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('productividad') }}">Productividad</a></li>
+                <li><a href="{{ url_for('listar_personas') }}">Personas</a></li>
+                <li><a href="{{ url_for('listar_clientes') }}">Clientes</a></li>
+                <li><a href="{{ url_for('listar_proyectos') }}">Proyectos</a></li>
+                <li><a href="{{ url_for('listar_servicios') }}">Servicios</a></li>
+                <li><a href="{{ url_for('listar_horas') }}">Registro de Horas</a></li>
+                <li style="margin-left: auto;"><span style="color: #64748b; font-weight: 500;">👤 {{ session.username }}</span></li>
+                <li><a href="{{ url_for('logout') }}" style="color: #ef4444; font-weight: 600;">🚪 Salir</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Comsulting. Sistema de Administración v1.0</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

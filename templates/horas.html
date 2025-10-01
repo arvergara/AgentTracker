@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Horas - Comsulting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Registro de Horas</h1>
+    <a href="{{ url_for('nueva_hora') }}" class="btn-primary">➕ Registrar Horas</a>
+</div>
+
+<div class="filters-section">
+    <div class="filter-group">
+        <label>Buscar:</label>
+        <input type="text" id="search-input" placeholder="Persona, cliente..." onkeyup="filtrarHoras()">
+    </div>
+    <div class="filter-group">
+        <label>Desde:</label>
+        <input type="date" id="fecha-desde" onchange="filtrarHoras()">
+    </div>
+    <div class="filter-group">
+        <label>Hasta:</label>
+        <input type="date" id="fecha-hasta" onchange="filtrarHoras()">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="data-table" id="horas-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Persona</th>
+                <th>Cliente</th>
+                <th>Servicio</th>
+                <th>Tarea</th>
+                <th>Horas</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hora in horas %}
+            <tr data-fecha="{{ hora.fecha }}">
+                <td>{{ hora.fecha.strftime('%d/%m/%Y') }}</td>
+                <td><strong>{{ hora.persona.nombre }}</strong></td>
+                <td>{{ hora.cliente.nombre }}</td>
+                <td>
+                    {% if hora.servicio %}
+                    <span class="badge badge-info" title="{{ hora.servicio.area }}">{{ hora.servicio.nombre }}</span>
+                    {% else %}
+                    <span class="badge badge-secondary">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if hora.tarea %}
+                    <small title="{{ hora.tarea.nombre }}">{{ hora.tarea.nombre[:40] }}{% if hora.tarea.nombre|length > 40 %}...{% endif %}</small>
+                    {% else %}
+                    <span class="badge badge-secondary">-</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-primary">{{ hora.horas }}h</span></td>
+                <td>
+                    {% if hora.descripcion %}
+                    <small>{{ hora.descripcion[:50] }}{% if hora.descripcion|length > 50 %}...{% endif %}</small>
+                    {% else %}
+                    <span style="color: #9ca3af;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination-info">
+    <p>Mostrando las últimas 100 entradas de horas</p>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarHoras() {
+    const searchValue = document.getElementById('search-input').value.toLowerCase();
+    const fechaDesde = document.getElementById('fecha-desde').value;
+    const fechaHasta = document.getElementById('fecha-hasta').value;
+    const table = document.getElementById('horas-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const text = row.textContent.toLowerCase();
+        const fechaRow = row.getAttribute('data-fecha');
+
+        let showRow = true;
+
+        if (searchValue && !text.includes(searchValue)) {
+            showRow = false;
+        }
+
+        if (fechaDesde && fechaRow < fechaDesde) {
+            showRow = false;
+        }
+
+        if (fechaHasta && fechaRow > fechaHasta) {
+            showRow = false;
+        }
+
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+</script>
+{% endblock %}

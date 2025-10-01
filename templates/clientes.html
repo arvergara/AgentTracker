@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - Comsulting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Gestión de Clientes</h1>
+    <a href="{{ url_for('nuevo_cliente') }}" class="btn-primary">➕ Nuevo Cliente</a>
+</div>
+
+<div class="filters-section">
+    <div class="filter-group">
+        <label>Buscar:</label>
+        <input type="text" id="search-input" placeholder="Nombre del cliente..." onkeyup="filtrarClientes()">
+    </div>
+    <div class="filter-group">
+        <label>Tipo:</label>
+        <select id="filter-tipo" onchange="filtrarClientes()">
+            <option value="">Todos</option>
+            <option value="permanente">Permanente</option>
+            <option value="spot">Spot</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Área:</label>
+        <select id="filter-area" onchange="filtrarClientes()">
+            <option value="">Todas</option>
+            <option value="Externas">Externas</option>
+            <option value="Internas">Internas</option>
+            <option value="Asuntos Públicos">Asuntos Públicos</option>
+            <option value="Redes sociales">Redes sociales</option>
+            <option value="Diseño">Diseño</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="data-table" id="clientes-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Área</th>
+                <th>Fecha Inicio</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td><strong>{{ cliente.nombre }}</strong></td>
+                <td>
+                    <span class="badge {% if cliente.tipo == 'permanente' %}badge-primary{% else %}badge-warning{% endif %}">
+                        {{ cliente.tipo|upper }}
+                    </span>
+                </td>
+                <td>{{ cliente.area }}</td>
+                <td>{{ cliente.fecha_inicio.strftime('%d/%m/%Y') if cliente.fecha_inicio else '-' }}</td>
+                <td>
+                    <span class="badge {% if cliente.activo %}badge-success{% else %}badge-danger{% endif %}">
+                        {{ 'Activo' if cliente.activo else 'Inactivo' }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('editar_cliente', cliente_id=cliente.id) }}" class="btn-sm btn-warning">✏️ Editar</a>
+                    <button onclick="verRentabilidad({{ cliente.id }}, 6)" class="btn-sm btn-secondary">📊 6M</button>
+                    <button onclick="verRentabilidad({{ cliente.id }}, 12)" class="btn-sm btn-secondary">📊 1A</button>
+                    <a href="{{ url_for('cliente_rentabilidad', cliente_id=cliente.id, meses=12) }}" class="btn-sm btn-primary">📈 Análisis Detallado</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal para mostrar rentabilidad -->
+<div id="modal-rentabilidad" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarModal()">&times;</span>
+        <h2>Análisis de Rentabilidad</h2>
+        <div id="contenido-rentabilidad"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarClientes() {
+    const searchValue = document.getElementById('search-input').value.toLowerCase();
+    const tipoFilter = document.getElementById('filter-tipo').value;
+    const areaFilter = document.getElementById('filter-area').value;
+    const table = document.getElementById('clientes-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const nombre = row.cells[0].textContent.toLowerCase();
+        const tipo = row.cells[1].textContent.toLowerCase();
+        const area = row.cells[2].textContent;
+
+        let showRow = true;
+
+        if (searchValue && !nombre.includes(searchValue)) {
+            showRow = false;
+        }
+
+        if (tipoFilter && !tipo.includes(tipoFilter)) {
+            showRow = false;
+        }
+
+        if (areaFilter && area !== areaFilter) {
+            showRow = false;
+        }
+
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+
+function verRentabilidad(clienteId, meses) {
+    fetch(`/api/rentabilidad/cliente/${clienteId}/${meses}`)
+        .then(response => response.json())
+        .then(data => {
+            let html = `
+                <div class="rentabilidad-report">
+                    <div class="report-header">
+                        <h3>${data.cliente}</h3>
+                        <p class="subtitle">Análisis de ${data.periodo_meses} meses</p>
+                    </div>
+                    
+                    <div class="report-stats">
+                        <div class="stat-box highlight">
+                            <span class="stat-label">Margen</span>
+                            <span class="stat-value-large ${data.margen > 0 ? 'text-success' : 'text-danger'}">${data.margen}%</span>
+                        </div>
+                    </div>
+
+                    <div class="report-details">
+                        <h4>Ingresos</h4>
+                        <div class="detail-row">
+                            <span>Total en UF:</span>
+                            <strong>${data.ingresos_uf} UF</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Total en Pesos:</span>
+                            <strong>$${data.ingresos_pesos.toLocaleString('es-CL')}</strong>
+                        </div>
+
+                        <h4>Costos</h4>
+                        <div class="detail-row">
+                            <span>Total en UF:</span>
+                            <strong>${data.costos_uf} UF</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Total en Pesos:</span>
+                            <strong>$${data.costos_pesos.toLocaleString('es-CL')}</strong>
+                        </div>
+
+                        <h4>Utilidad Bruta</h4>
+                        <div class="detail-row">
+                            <span>En UF:</span>
+                            <strong class="${data.utilidad_bruta_uf > 0 ? 'text-success' : 'text-danger'}">${data.utilidad_bruta_uf} UF</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>En Pesos:</span>
+                            <strong class="${data.utilidad_bruta_pesos > 0 ? 'text-success' : 'text-danger'}">$${data.utilidad_bruta_pesos.toLocaleString('es-CL')}</strong>
+                        </div>
+
+                        <h4>Utilidad Neta (después de impuestos)</h4>
+                        <div class="detail-row">
+                            <span>En UF:</span>
+                            <strong class="${data.utilidad_neta_uf > 0 ? 'text-success' : 'text-danger'}">${data.utilidad_neta_uf} UF</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>En Pesos:</span>
+                            <strong class="${data.utilidad_neta_pesos > 0 ? 'text-success' : 'text-danger'}">$${data.utilidad_neta_pesos.toLocaleString('es-CL')}</strong>
+                        </div>
+                    </div>
+
+                    <p class="report-note">Valor UF: $${data.valor_uf.toLocaleString('es-CL')}</p>
+                </div>
+            `;
+            document.getElementById('contenido-rentabilidad').innerHTML = html;
+            document.getElementById('modal-rentabilidad').style.display = 'block';
+        })
+        .catch(error => {
+            alert('Error al cargar rentabilidad: ' + error);
+        });
+}
+
+function cerrarModal() {
+    document.getElementById('modal-rentabilidad').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('modal-rentabilidad');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

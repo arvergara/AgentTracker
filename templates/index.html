@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Comsulting{% endblock %}
+
+{% block content %}
+<div class="home-page">
+    <div class="hero-section">
+        <h1>Sistema de Administración Comsulting</h1>
+        <p class="subtitle">Gestión inteligente de horas, facturación y rentabilidad</p>
+        <div class="cta-buttons">
+            <a href="{{ url_for('dashboard') }}" class="btn-primary btn-large">Ir al Dashboard</a>
+            <a href="{{ url_for('nueva_hora') }}" class="btn-secondary btn-large">Registrar Horas</a>
+        </div>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Capacidad del Equipo</h3>
+            <p>Monitorea la capacidad disponible y utilización del equipo en tiempo real</p>
+            <a href="{{ url_for('dashboard') }}" class="btn-link">Ver capacidad →</a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">💰</div>
+            <h3>Rentabilidad</h3>
+            <p>Analiza la rentabilidad de clientes y áreas con reportes detallados</p>
+            <a href="{{ url_for('dashboard') }}" class="btn-link">Ver rentabilidad →</a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">💵</div>
+            <h3>Pricing de Proyectos</h3>
+            <p>Calcula precios de proyectos con márgenes deseados y valorización en UF</p>
+            <a href="{{ url_for('dashboard') }}#pricing" class="btn-link">Calcular precio →</a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⏱️</div>
+            <h3>Registro de Horas</h3>
+            <p>Sistema completo de registro de horas por persona, cliente y tarea</p>
+            <a href="{{ url_for('listar_horas') }}" class="btn-link">Ver horas →</a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3>Gestión de Equipo</h3>
+            <p>Administra personas, cargos, costos y reportes de productividad</p>
+            <a href="{{ url_for('listar_personas') }}" class="btn-link">Ver equipo →</a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🏢</div>
+            <h3>Gestión de Clientes</h3>
+            <p>Control completo de clientes permanentes y spot con su facturación</p>
+            <a href="{{ url_for('listar_clientes') }}" class="btn-link">Ver clientes →</a>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h2>Funcionalidades Principales</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <h4>✅ Monitoreo de Capacidad</h4>
+                <ul>
+                    <li>Visualización de capacidad disponible por persona</li>
+                    <li>Alertas de personas sobrecargadas</li>
+                    <li>Reportes históricos (1, 3, 6 meses)</li>
+                    <li>Notificaciones de horas no registradas</li>
+                </ul>
+            </div>
+            <div class="info-item">
+                <h4>✅ Análisis de Rentabilidad</h4>
+                <ul>
+                    <li>Rentabilidad por cliente (6 meses, 1 año)</li>
+                    <li>Márgenes y aportes en UF y pesos</li>
+                    <li>Rankings de clientes más rentables</li>
+                    <li>Rentabilidad por área de negocio</li>
+                </ul>
+            </div>
+            <div class="info-item">
+                <h4>✅ Valorización de Proyectos</h4>
+                <ul>
+                    <li>Cálculo automático de precios</li>
+                    <li>Ajuste de márgenes deseados</li>
+                    <li>Valores actualizados en UF</li>
+                    <li>Desglose de costos por cargo</li>
+                </ul>
+            </div>
+            <div class="info-item">
+                <h4>✅ Productividad Individual</h4>
+                <ul>
+                    <li>Reportes de productividad por persona</li>
+                    <li>Recomendaciones de aumentos</li>
+                    <li>Cálculo de bonos</li>
+                    <li>ROI individual</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h2>Acciones Rápidas</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('nueva_persona') }}" class="action-btn">
+                <span class="icon">👤</span>
+                <span>Agregar Persona</span>
+            </a>
+            <a href="{{ url_for('nuevo_cliente') }}" class="action-btn">
+                <span class="icon">🏢</span>
+                <span>Agregar Cliente</span>
+            </a>
+            <a href="{{ url_for('nueva_hora') }}" class="action-btn">
+                <span class="icon">⏱️</span>
+                <span>Registrar Horas</span>
+            </a>
+            <a href="{{ url_for('inicializar_datos') }}" class="action-btn">
+                <span class="icon">🔄</span>
+                <span>Datos de Prueba</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

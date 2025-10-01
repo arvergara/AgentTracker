@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Servicios - Comsulting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Gestión de Servicios</h1>
+    <a href="{{ url_for('nuevo_servicio') }}" class="btn-primary">➕ Nuevo Servicio</a>
+</div>
+
+<div class="filters-section">
+    <div class="filter-group">
+        <label>Buscar:</label>
+        <input type="text" id="search-input" placeholder="Nombre del servicio..." onkeyup="filtrarServicios()">
+    </div>
+    <div class="filter-group">
+        <label>Área:</label>
+        <select id="filter-area" onchange="filtrarServicios()">
+            <option value="">Todas</option>
+            <option value="Externas">Externas</option>
+            <option value="Internas">Internas</option>
+            <option value="Asuntos Públicos">Asuntos Públicos</option>
+            <option value="Redes sociales">Redes sociales</option>
+            <option value="Diseño">Diseño</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="data-table" id="servicios-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Área</th>
+                <th>Proyectos Asociados</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for servicio in servicios %}
+            <tr>
+                <td><strong>{{ servicio.nombre }}</strong></td>
+                <td>
+                    {% if servicio.area %}
+                    <span class="badge badge-primary">{{ servicio.area }}</span>
+                    {% else %}
+                    <span class="badge badge-secondary">Sin área</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-info">{{ servicio.proyectos|length }} proyecto(s)</span>
+                </td>
+                <td>
+                    <a href="{{ url_for('editar_servicio', servicio_id=servicio.id) }}" class="btn-sm btn-warning">✏️ Editar</a>
+                    <form method="POST" action="{{ url_for('eliminar_servicio', servicio_id=servicio.id) }}"
+                          style="display: inline;"
+                          onsubmit="return confirm('¿Estás seguro de eliminar este servicio? Esta acción no se puede deshacer.');">
+                        <button type="submit" class="btn-sm btn-danger">🗑️ Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 2rem; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+    <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem;">📋 Servicios Actualmente Ofrecidos</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.5rem; font-size: 0.9rem;">
+        <div>✅ Comunicaciones Externas</div>
+        <div>✅ Gestión de Crisis</div>
+        <div>✅ Taller de vocería</div>
+        <div>✅ Comunicaciones Internas</div>
+        <div>✅ Asuntos Públicos</div>
+        <div>✅ Monitoreo digital</div>
+        <div>✅ Estrategia y gestión de redes</div>
+        <div>✅ Diseño para comunicaciones internas</div>
+        <div>✅ Diseño para redes sociales</div>
+        <div>✅ Diseño para Comsulting</div>
+        <div>✅ Memorias</div>
+        <div>✅ Desarrollo web</div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarServicios() {
+    const searchValue = document.getElementById('search-input').value.toLowerCase();
+    const areaFilter = document.getElementById('filter-area').value;
+    const table = document.getElementById('servicios-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const nombre = row.cells[0].textContent.toLowerCase();
+        const area = row.cells[1].textContent;
+
+        let showRow = true;
+
+        if (searchValue && !nombre.includes(searchValue)) {
+            showRow = false;
+        }
+
+        if (areaFilter && !area.includes(areaFilter)) {
+            showRow = false;
+        }
+
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+</script>
+{% endblock %}

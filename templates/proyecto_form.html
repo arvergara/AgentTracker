@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if proyecto %}Editar{% else %}Nuevo{% endif %} Proyecto - Comsulting</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Comsulting Admin</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/personas">Personas</a>
+                <a class="nav-link" href="/clientes">Clientes</a>
+                <a class="nav-link active" href="/proyectos">Proyectos</a>
+                <a class="nav-link" href="/horas">Horas</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <h2 class="mb-4">{% if proyecto %}Editar{% else %}Crear Nuevo{% endif %} Proyecto</h2>
+
+                <form method="POST" action="{% if proyecto %}/proyectos/{{ proyecto.id }}/editar{% else %}/proyectos/nuevo{% endif %}">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Información Básica</h5>
+
+                            <div class="mb-3">
+                                <label class="form-label">Cliente *</label>
+                                <select name="cliente_id" class="form-select" required {% if proyecto %}disabled{% endif %}>
+                                    <option value="">Seleccionar cliente...</option>
+                                    {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}" {% if proyecto and proyecto.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if proyecto %}
+                                <input type="hidden" name="cliente_id" value="{{ proyecto.cliente_id }}">
+                                <small class="text-muted">El cliente no puede modificarse después de crear el proyecto</small>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Nombre del Proyecto *</label>
+                                <input type="text" name="nombre" class="form-control" value="{{ proyecto.nombre if proyecto else '' }}" required
+                                       placeholder="Ej: Campaña Digital 2025">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Código {% if not proyecto %}(opcional){% endif %}</label>
+                                    <input type="text" name="codigo" class="form-control" value="{{ proyecto.codigo if proyecto else '' }}"
+                                           placeholder="{% if not proyecto %}Se generará automáticamente{% else %}{{ proyecto.codigo }}{% endif %}">
+                                    <small class="text-muted">Ej: BAN-PRY-2025-01</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Servicio</label>
+                                    <select name="servicio_id" class="form-select">
+                                        <option value="">Seleccionar servicio...</option>
+                                        {% for servicio in servicios %}
+                                        <option value="{{ servicio.id }}" {% if proyecto and proyecto.servicio_id == servicio.id %}selected{% endif %}>{{ servicio.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h5 class="card-title mb-3 mt-4">Detalles del Proyecto</h5>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tipo</label>
+                                    <select name="tipo" class="form-select">
+                                        <option value="permanente" {% if proyecto and proyecto.tipo == 'permanente' %}selected{% endif %}>Permanente</option>
+                                        <option value="spot" {% if proyecto and proyecto.tipo == 'spot' %}selected{% endif %}>Spot</option>
+                                        <option value="interno" {% if proyecto and proyecto.tipo == 'interno' %}selected{% endif %}>Interno</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Estado</label>
+                                    <select name="estado" class="form-select">
+                                        <option value="activo" {% if not proyecto or proyecto.estado == 'activo' %}selected{% endif %}>Activo</option>
+                                        <option value="pausado" {% if proyecto and proyecto.estado == 'pausado' %}selected{% endif %}>Pausado</option>
+                                        <option value="cerrado" {% if proyecto and proyecto.estado == 'cerrado' %}selected{% endif %}>Cerrado</option>
+                                        <option value="facturado" {% if proyecto and proyecto.estado == 'facturado' %}selected{% endif %}>Facturado</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Fecha Inicio</label>
+                                    <input type="date" name="fecha_inicio" class="form-control"
+                                           value="{% if proyecto and proyecto.fecha_inicio %}{{ proyecto.fecha_inicio.strftime('%Y-%m-%d') }}{% endif %}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Fecha Fin (estimada)</label>
+                                    <input type="date" name="fecha_fin" class="form-control"
+                                           value="{% if proyecto and proyecto.fecha_fin %}{{ proyecto.fecha_fin.strftime('%Y-%m-%d') }}{% endif %}">
+                                </div>
+                            </div>
+
+                            <h5 class="card-title mb-3 mt-4">Presupuesto y Margen</h5>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Presupuesto (UF)</label>
+                                    <input type="number" step="0.01" name="presupuesto_uf" class="form-control"
+                                           value="{{ proyecto.presupuesto_uf if proyecto else '' }}"
+                                           placeholder="0.00">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Margen Objetivo (%)</label>
+                                    <input type="number" step="0.1" name="margen_objetivo" class="form-control"
+                                           value="{{ proyecto.margen_objetivo if proyecto else '12.5' }}" placeholder="12.5">
+                                    <small class="text-muted">Margen deseado antes de impuestos</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Descripción</label>
+                                <textarea name="descripcion" class="form-control" rows="3"
+                                          placeholder="Descripción del alcance y objetivos del proyecto...">{{ proyecto.descripcion if proyecto else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">{% if proyecto %}Actualizar{% else %}Crear{% endif %} Proyecto</button>
+                        <a href="{% if proyecto %}/proyectos/{{ proyecto.id }}{% else %}/proyectos{% endif %}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

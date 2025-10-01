@@ -1,0 +1,746 @@
+{% extends "base.html" %}
+
+{% block title %}Productividad y Rentabilidad - Comsulting{% endblock %}
+
+{% block styles %}
+<style>
+    .period-selector {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .period-selector a {
+        padding: 0.75rem 1.5rem;
+        background: white;
+        border: 2px solid #2563eb;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #2563eb;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .period-selector a.active {
+        background: #2563eb;
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .period-selector a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #2563eb;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+
+    .metric-card.positive {
+        border-left-color: #10b981;
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    }
+
+    .metric-card.negative {
+        border-left-color: #ef4444;
+        background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+    }
+
+    .metric-card.warning {
+        border-left-color: #f59e0b;
+        background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+    }
+
+    .metric-icon {
+        font-size: 2rem;
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+        opacity: 0.2;
+    }
+
+    .metric-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0.5rem 0;
+    }
+
+    .metric-value.positive {
+        color: #10b981;
+    }
+
+    .metric-value.negative {
+        color: #ef4444;
+    }
+
+    .metric-sublabel {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 0.25rem;
+    }
+
+    .section-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #e5e7eb;
+        flex-wrap: wrap;
+    }
+
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: #6b7280;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        font-size: 1rem;
+    }
+
+    .tab-button.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+    }
+
+    .tab-button:hover {
+        color: #2563eb;
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chart-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        position: relative;
+        height: 400px;
+    }
+
+    .data-table-clickable tbody tr {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .data-table-clickable tbody tr:hover {
+        background: #f3f4f6;
+        transform: translateX(4px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .positive-text {
+        color: #10b981 !important;
+        font-weight: 600;
+    }
+
+    .negative-text {
+        color: #ef4444 !important;
+        font-weight: 600;
+    }
+
+    .area-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .area-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-top: 4px solid #2563eb;
+        transition: all 0.3s ease;
+    }
+
+    .area-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+
+    .area-card h3 {
+        margin: 0 0 1rem 0;
+        color: #1f2937;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .area-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .area-stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .area-stat:last-child {
+        border-bottom: none;
+    }
+
+    .area-stat-label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .area-stat-value {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .page-header-custom {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-header-custom h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header-custom p {
+        color: #64748b;
+        font-size: 1.125rem;
+    }
+
+    .info-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .info-banner-icon {
+        font-size: 1.5rem;
+    }
+
+    .info-banner-text {
+        flex: 1;
+    }
+
+    .badge-info {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header-custom">
+    <h1>📊 Productividad y Rentabilidad</h1>
+    <p>Análisis completo de rendimiento financiero</p>
+</div>
+
+<!-- Period Selector -->
+<div class="period-selector">
+    <a href="?meses=3" {% if meses == 3 %}class="active"{% endif %}>3 Meses</a>
+    <a href="?meses=6" {% if meses == 6 %}class="active"{% endif %}>6 Meses</a>
+    <a href="?meses=12" {% if meses == 12 %}class="active"{% endif %}>1 Año</a>
+    <a href="?meses=24" {% if meses == 24 %}class="active"{% endif %}>2 Años</a>
+</div>
+
+<!-- Key Metrics Dashboard -->
+<div class="dashboard-grid">
+    <div class="metric-card {% if total.margen_porcentaje > 15 %}positive{% elif total.margen_porcentaje > 5 %}warning{% else %}negative{% endif %}">
+        <div class="metric-icon">📈</div>
+        <div class="metric-label">Margen</div>
+        <div class="metric-value {% if total.margen_porcentaje > 0 %}positive-text{% else %}negative-text{% endif %}">
+            {{ "%.1f"|format(total.margen_porcentaje) }}%
+        </div>
+        <div class="metric-sublabel">Últimos {{ meses }} meses</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon">💰</div>
+        <div class="metric-label">Ingresos</div>
+        <div class="metric-value">{{ "%.1f"|format(total.ingresos_uf) }}</div>
+        <div class="metric-sublabel">UF facturadas</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon">💸</div>
+        <div class="metric-label">Costos</div>
+        <div class="metric-value">{{ "%.1f"|format(total.costos_uf) }}</div>
+        <div class="metric-sublabel">UF en costos</div>
+    </div>
+
+    <div class="metric-card {% if total.margen_uf > 0 %}positive{% else %}negative{% endif %}">
+        <div class="metric-icon">{% if total.margen_uf > 0 %}✅{% else %}⚠️{% endif %}</div>
+        <div class="metric-label">Utilidad Neta</div>
+        <div class="metric-value {% if total.margen_uf > 0 %}positive-text{% else %}negative-text{% endif %}">
+            {{ "%.1f"|format(total.margen_uf) }}
+        </div>
+        <div class="metric-sublabel">UF de utilidad</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon">⏱️</div>
+        <div class="metric-label">Horas Totales</div>
+        <div class="metric-value">{{ "%.0f"|format(total.horas) }}</div>
+        <div class="metric-sublabel">Horas trabajadas</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-label">UF por Hora</div>
+        <div class="metric-value">{{ "%.2f"|format(total.ingresos_uf / total.horas if total.horas > 0 else 0) }}</div>
+        <div class="metric-sublabel">Facturación/hora</div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="chart-container">
+    <canvas id="rentabilidadChart"></canvas>
+</div>
+
+<!-- Section Tabs -->
+<div class="section-tabs">
+    <button class="tab-button active" onclick="switchTab('clientes')">📊 Por Cliente</button>
+    <button class="tab-button" onclick="switchTab('areas')">🏢 Por Área</button>
+    <button class="tab-button" onclick="switchTab('servicios')">🎯 Por Servicio</button>
+</div>
+
+<!-- Tab: Por Cliente -->
+<div id="tab-clientes" class="tab-content active">
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.5rem; color: #1e293b;">Rentabilidad por Cliente</h3>
+        <div class="info-banner">
+            <div class="info-banner-icon">💡</div>
+            <div class="info-banner-text">
+                <strong>Tip:</strong> Haz doble clic en cualquier cliente para ver su análisis detallado
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table data-table-clickable">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Área</th>
+                        <th>Tipo</th>
+                        <th>Horas</th>
+                        <th>Ingresos (UF)</th>
+                        <th>Costos (UF)</th>
+                        <th>Margen %</th>
+                        <th>Utilidad (UF)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr ondblclick="window.location.href='/clientes/{{ cliente.id }}/rentabilidad?meses={{ meses }}'">
+                        <td><strong>{{ cliente.nombre }}</strong></td>
+                        <td><span class="badge badge-info">{{ cliente.area }}</span></td>
+                        <td><span class="badge {% if cliente.tipo == 'permanente' %}badge-primary{% else %}badge-warning{% endif %}">{{ cliente.tipo }}</span></td>
+                        <td>{{ "%.0f"|format(cliente.horas) }}h</td>
+                        <td>{{ "%.1f"|format(cliente.ingresos_uf) }}</td>
+                        <td>{{ "%.1f"|format(cliente.costos_uf) }}</td>
+                        <td class="{% if cliente.margen_porcentaje > 0 %}positive-text{% else %}negative-text{% endif %}">
+                            <strong>{{ "%.1f"|format(cliente.margen_porcentaje) }}%</strong>
+                        </td>
+                        <td class="{% if cliente.margen_uf > 0 %}positive-text{% else %}negative-text{% endif %}">
+                            <strong>{{ "%.1f"|format(cliente.margen_uf) }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chart-container" style="margin-top: 2rem;">
+            <canvas id="clientesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Por Área -->
+<div id="tab-areas" class="tab-content">
+    <div class="area-cards">
+        {% for area_nombre, area_data in areas.items() %}
+        <div class="area-card">
+            <h3>🏢 {{ area_nombre }}</h3>
+            <div class="area-stats">
+                <div class="area-stat">
+                    <span class="area-stat-label">⏱️ Horas:</span>
+                    <span class="area-stat-value">{{ "%.0f"|format(area_data.horas) }}h</span>
+                </div>
+                <div class="area-stat">
+                    <span class="area-stat-label">💰 Ingresos:</span>
+                    <span class="area-stat-value">{{ "%.1f"|format(area_data.ingresos_uf) }} UF</span>
+                </div>
+                <div class="area-stat">
+                    <span class="area-stat-label">💸 Costos:</span>
+                    <span class="area-stat-value">{{ "%.1f"|format(area_data.costos_uf) }} UF</span>
+                </div>
+                <div class="area-stat">
+                    <span class="area-stat-label">📈 Margen:</span>
+                    <span class="area-stat-value {% if area_data.margen_porcentaje > 0 %}positive-text{% else %}negative-text{% endif %}">
+                        {{ "%.1f"|format(area_data.margen_porcentaje) }}%
+                    </span>
+                </div>
+                <div class="area-stat">
+                    <span class="area-stat-label">✅ Utilidad:</span>
+                    <span class="area-stat-value {% if area_data.margen_uf > 0 %}positive-text{% else %}negative-text{% endif %}">
+                        {{ "%.1f"|format(area_data.margen_uf) }} UF
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="chart-container" style="margin-top: 2rem;">
+        <canvas id="areasChart"></canvas>
+    </div>
+</div>
+
+<!-- Tab: Por Servicio -->
+<div id="tab-servicios" class="tab-content">
+    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.5rem; color: #1e293b;">Rentabilidad por Servicio</h3>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1.5rem;">
+            <strong>Nota:</strong> Los ingresos por servicio son prorrateados según participación en costos
+        </p>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Área</th>
+                        <th>Horas</th>
+                        <th>Ingresos (UF)</th>
+                        <th>Costos (UF)</th>
+                        <th>Margen %</th>
+                        <th>Utilidad (UF)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for servicio in servicios %}
+                    <tr>
+                        <td><strong>{{ servicio.nombre }}</strong></td>
+                        <td><span class="badge badge-info">{{ servicio.area }}</span></td>
+                        <td>{{ "%.0f"|format(servicio.horas) }}h</td>
+                        <td>{{ "%.1f"|format(servicio.ingresos_uf) }}</td>
+                        <td>{{ "%.1f"|format(servicio.costos_uf) }}</td>
+                        <td class="{% if servicio.margen_porcentaje > 0 %}positive-text{% else %}negative-text{% endif %}">
+                            <strong>{{ "%.1f"|format(servicio.margen_porcentaje) }}%</strong>
+                        </td>
+                        <td class="{% if servicio.margen_uf > 0 %}positive-text{% else %}negative-text{% endif %}">
+                            <strong>{{ "%.1f"|format(servicio.margen_uf) }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chart-container" style="margin-top: 2rem;">
+            <canvas id="serviciosChart"></canvas>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Deactivate all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab
+    document.getElementById('tab-' + tabName).classList.add('active');
+
+    // Activate selected button
+    event.target.classList.add('active');
+}
+
+// Chart.js configurations
+const chartColors = {
+    primary: '#2563eb',
+    success: '#10b981',
+    danger: '#ef4444',
+    warning: '#f59e0b',
+    info: '#06b6d4',
+    purple: '#8b5cf6'
+};
+
+// Rentabilidad Overview Chart
+const rentabilidadCtx = document.getElementById('rentabilidadChart').getContext('2d');
+new Chart(rentabilidadCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Ingresos', 'Costos', 'Utilidad'],
+        datasets: [{
+            label: 'UF',
+            data: [
+                {{ total.ingresos_uf }},
+                {{ total.costos_uf }},
+                {{ total.margen_uf }}
+            ],
+            backgroundColor: [
+                chartColors.success,
+                chartColors.danger,
+                {{ 'chartColors.success' if total.margen_uf > 0 else 'chartColors.danger' }}
+            ],
+            borderRadius: 8,
+            barThickness: 80
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: 'Resumen Financiero (UF)',
+                font: {
+                    size: 18,
+                    weight: 'bold'
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y.toFixed(1) + ' UF';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value.toFixed(0) + ' UF';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Clientes Chart
+const clientesData = {{ clientes | tojson }};
+const clientesCtx = document.getElementById('clientesChart').getContext('2d');
+new Chart(clientesCtx, {
+    type: 'bar',
+    data: {
+        labels: clientesData.slice(0, 10).map(c => c.nombre),
+        datasets: [
+            {
+                label: 'Ingresos (UF)',
+                data: clientesData.slice(0, 10).map(c => c.ingresos_uf),
+                backgroundColor: chartColors.success,
+                borderRadius: 6
+            },
+            {
+                label: 'Costos (UF)',
+                data: clientesData.slice(0, 10).map(c => c.costos_uf),
+                backgroundColor: chartColors.danger,
+                borderRadius: 6
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Top 10 Clientes - Ingresos vs Costos',
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + ' UF';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value.toFixed(0) + ' UF';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Areas Chart
+const areasData = {{ areas | tojson }};
+const areasLabels = Object.keys(areasData);
+const areasCtx = document.getElementById('areasChart').getContext('2d');
+new Chart(areasCtx, {
+    type: 'doughnut',
+    data: {
+        labels: areasLabels,
+        datasets: [{
+            label: 'Ingresos (UF)',
+            data: areasLabels.map(a => areasData[a].ingresos_uf),
+            backgroundColor: [
+                chartColors.primary,
+                chartColors.success,
+                chartColors.warning,
+                chartColors.info,
+                chartColors.purple
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Distribución de Ingresos por Área',
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                }
+            },
+            legend: {
+                position: 'right'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': ' + context.parsed.toFixed(1) + ' UF';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Servicios Chart
+const serviciosData = {{ servicios | tojson }};
+const serviciosCtx = document.getElementById('serviciosChart').getContext('2d');
+new Chart(serviciosCtx, {
+    type: 'horizontalBar',
+    data: {
+        labels: serviciosData.slice(0, 10).map(s => s.nombre),
+        datasets: [{
+            label: 'Margen %',
+            data: serviciosData.slice(0, 10).map(s => s.margen_porcentaje),
+            backgroundColor: serviciosData.slice(0, 10).map(s =>
+                s.margen_porcentaje > 0 ? chartColors.success : chartColors.danger
+            ),
+            borderRadius: 6
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Margen por Servicio (%)',
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Margen: ' + context.parsed.x.toFixed(1) + '%';
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

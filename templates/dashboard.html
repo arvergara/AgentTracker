@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Comsulting{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1 class="page-title">Dashboard de Gestión</h1>
+    
+    <!-- Sección de Capacidad del Equipo -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <h2>Capacidad Disponible del Equipo</h2>
+            <div class="period-selector">
+                <button onclick="cargarCapacidad(1)" class="btn-secondary active">1 Mes</button>
+                <button onclick="cargarCapacidad(3)" class="btn-secondary">3 Meses</button>
+                <button onclick="cargarCapacidad(6)" class="btn-secondary">6 Meses</button>
+            </div>
+        </div>
+        
+        <div id="capacidad-container">
+            <div class="stats-grid">
+                {% for persona in capacidad %}
+                <div class="stat-card {% if persona.estado == 'sobrecargado' %}alert{% elif persona.estado == 'optimo' %}success{% endif %}">
+                    <h3>{{ persona.persona }}</h3>
+                    <div class="stat-detail">
+                        <span class="label">Cargo:</span>
+                        <span class="value">{{ persona.cargo }} - {{ persona.area }}</span>
+                    </div>
+                    <div class="stat-detail">
+                        <span class="label">Utilización:</span>
+                        <span class="value">{{ persona.porcentaje_utilizacion }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ persona.porcentaje_utilizacion if persona.porcentaje_utilizacion <= 100 else 100 }}%"></div>
+                    </div>
+                    <div class="stat-detail">
+                        <span class="label">Horas trabajadas:</span>
+                        <span class="value">{{ persona.horas_trabajadas }}h</span>
+                    </div>
+                    <div class="stat-detail">
+                        <span class="label">Capacidad disponible:</span>
+                        <span class="value {% if persona.capacidad_disponible < 0 %}text-danger{% endif %}">
+                            {{ persona.capacidad_disponible }}h
+                        </span>
+                    </div>
+                    <div class="badge badge-{{ persona.estado }}">
+                        {{ persona.estado|upper }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Alertas: Personas sin registrar horas -->
+    {% if sin_horas %}
+    <section class="dashboard-section alert-section">
+        <h2>⚠️ Alertas: Personas sin registrar horas (últimos 2 días)</h2>
+        <div class="alert-list">
+            {% for persona in sin_horas %}
+            <div class="alert-item">
+                <strong>{{ persona.persona }}</strong> ({{ persona.email }})
+                - Reporte directo: {{ persona.reporte_directo }}
+                {% if persona.email_reporte %}
+                    ({{ persona.email_reporte }})
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Calculadora de Necesidad de Contratación -->
+    <section class="dashboard-section">
+        <h2>Calculadora de Necesidad de Contratación</h2>
+        <div class="calculator-form">
+            <div class="form-group">
+                <label>Horas Socio/Mes:</label>
+                <input type="number" id="horas-socio" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>Horas Director/Mes:</label>
+                <input type="number" id="horas-director" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>Horas Consultor/Mes:</label>
+                <input type="number" id="horas-consultor" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>Área:</label>
+                <select id="area-contratacion">
+                    <option value="">Todas</option>
+                    <option value="Externas">Externas</option>
+                    <option value="Internas">Internas</option>
+                    <option value="Asuntos Públicos">Asuntos Públicos</option>
+                    <option value="Redes sociales">Redes sociales</option>
+                    <option value="Diseño">Diseño</option>
+                </select>
+            </div>
+            <button onclick="calcularNecesidadContratacion()" class="btn-primary">Calcular</button>
+        </div>
+        <div id="resultado-contratacion" class="result-box"></div>
+    </section>
+
+    <!-- Top 5 Clientes Más Rentables -->
+    <section class="dashboard-section">
+        <h2>Top 5 Clientes Más Rentables (2025)</h2>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Cliente</th>
+                        <th>Ingresos (UF)</th>
+                        <th>Costos (UF)</th>
+                        <th>Utilidad Neta (UF)</th>
+                        <th>Margen (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in top_clientes %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ cliente.cliente }}</strong></td>
+                        <td>{{ cliente.ingresos_uf }}</td>
+                        <td>{{ cliente.costos_uf }}</td>
+                        <td class="text-success">{{ cliente.utilidad_neta_uf }}</td>
+                        <td>{{ cliente.margen }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Rentabilidad por Área -->
+    <section class="dashboard-section">
+        <h2>Rentabilidad por Área de Comsulting</h2>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Área</th>
+                        <th>Ingresos (UF)</th>
+                        <th>Costos (UF)</th>
+                        <th>Utilidad (UF)</th>
+                        <th>Margen (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for area in areas_rentabilidad %}
+                    <tr>
+                        <td><strong>{{ area.area }}</strong></td>
+                        <td>{{ area.ingresos_uf }}</td>
+                        <td>{{ area.costos_uf }}</td>
+                        <td class="{% if area.utilidad_uf > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ area.utilidad_uf }}
+                        </td>
+                        <td>{{ area.margen }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Calculadora de Pricing -->
+    <section id="pricing" class="dashboard-section">
+        <h2>Calculadora de Pricing de Proyectos</h2>
+        <div class="calculator-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Horas Socio/Mes:</label>
+                    <input type="number" id="pricing-socio" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Horas Director/Mes:</label>
+                    <input type="number" id="pricing-director" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Horas Consultor/Mes:</label>
+                    <input type="number" id="pricing-consultor" value="0" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Margen Deseado (antes de impuestos) %:</label>
+                <input type="number" id="margen-deseado" value="12.5" min="0" max="100" step="0.5">
+            </div>
+            <button onclick="calcularPricing()" class="btn-primary">Calcular Precio</button>
+        </div>
+        <div id="resultado-pricing" class="result-box"></div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cargarCapacidad(meses) {
+    fetch(`/api/capacidad/${meses}`)
+        .then(response => response.json())
+        .then(data => {
+            actualizarVistaCapacidad(data);
+        });
+}
+
+function actualizarVistaCapacidad(data) {
+    let html = '<div class="stats-grid">';
+    data.forEach(persona => {
+        let estadoClass = '';
+        if (persona.estado === 'sobrecargado') estadoClass = 'alert';
+        else if (persona.estado === 'optimo') estadoClass = 'success';
+        
+        html += `
+            <div class="stat-card ${estadoClass}">
+                <h3>${persona.persona}</h3>
+                <div class="stat-detail">
+                    <span class="label">Cargo:</span>
+                    <span class="value">${persona.cargo} - ${persona.area}</span>
+                </div>
+                <div class="stat-detail">
+                    <span class="label">Utilización:</span>
+                    <span class="value">${persona.porcentaje_utilizacion}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${Math.min(persona.porcentaje_utilizacion, 100)}%"></div>
+                </div>
+                <div class="stat-detail">
+                    <span class="label">Horas trabajadas:</span>
+                    <span class="value">${persona.horas_trabajadas}h</span>
+                </div>
+                <div class="stat-detail">
+                    <span class="label">Capacidad disponible:</span>
+                    <span class="value ${persona.capacidad_disponible < 0 ? 'text-danger' : ''}">
+                        ${persona.capacidad_disponible}h
+                    </span>
+                </div>
+                <div class="badge badge-${persona.estado}">
+                    ${persona.estado.toUpperCase()}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    document.getElementById('capacidad-container').innerHTML = html;
+}
+
+function calcularNecesidadContratacion() {
+    const data = {
+        horas_socio: parseFloat(document.getElementById('horas-socio').value),
+        horas_director: parseFloat(document.getElementById('horas-director').value),
+        horas_consultor: parseFloat(document.getElementById('horas-consultor').value),
+        area: document.getElementById('area-contratacion').value
+    };
+
+    fetch('/api/necesidad-contratacion', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        let html = '<div class="result-content">';
+        if (result.contratar) {
+            html += `
+                <div class="alert alert-warning">
+                    <h3>⚠️ Se recomienda contratar</h3>
+                    <p><strong>Cargo necesario:</strong> ${result.cargo}</p>
+                    <p><strong>Razón:</strong> ${result.razon}</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="alert alert-success">
+                    <h3>✅ No es necesario contratar</h3>
+                    <p>El equipo actual tiene capacidad suficiente para el nuevo cliente.</p>
+                </div>
+            `;
+        }
+        html += `
+            <h4>Capacidad Actual Disponible:</h4>
+            <ul>
+                <li>Socios: ${result.capacidad_actual.socios}h</li>
+                <li>Directores: ${result.capacidad_actual.directores}h</li>
+                <li>Consultores: ${result.capacidad_actual.consultores}h</li>
+            </ul>
+        </div>`;
+        document.getElementById('resultado-contratacion').innerHTML = html;
+    });
+}
+
+function calcularPricing() {
+    const horasSocio = parseFloat(document.getElementById('pricing-socio').value);
+    const horasDirector = parseFloat(document.getElementById('pricing-director').value);
+    const horasConsultor = parseFloat(document.getElementById('pricing-consultor').value);
+    const margen = parseFloat(document.getElementById('margen-deseado').value);
+
+    const data = {
+        horas_por_cargo: {},
+        margen_deseado: margen
+    };
+
+    if (horasSocio > 0) data.horas_por_cargo['Socio'] = horasSocio;
+    if (horasDirector > 0) data.horas_por_cargo['Director'] = horasDirector;
+    if (horasConsultor > 0) data.horas_por_cargo['Consultor'] = horasConsultor;
+
+    fetch('/api/pricing', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        let html = `
+            <div class="result-content">
+                <div class="pricing-result">
+                    <h3>Resultado del Pricing</h3>
+                    <div class="pricing-main">
+                        <div class="pricing-item highlight">
+                            <span class="label">Precio a Cobrar:</span>
+                            <span class="value-large">${result.precio_cobrar_uf.toFixed(2)} UF</span>
+                            <span class="value-secondary">($${result.precio_cobrar_pesos.toLocaleString('es-CL')})</span>
+                        </div>
+                    </div>
+                    <div class="pricing-details">
+                        <div class="pricing-item">
+                            <span class="label">Costo Total:</span>
+                            <span class="value">${result.costo_total_uf.toFixed(2)} UF ($${result.costo_total_pesos.toLocaleString('es-CL')})</span>
+                        </div>
+                        <div class="pricing-item">
+                            <span class="label">Utilidad Bruta:</span>
+                            <span class="value">${result.utilidad_bruta_uf.toFixed(2)} UF</span>
+                        </div>
+                        <div class="pricing-item">
+                            <span class="label">Utilidad Neta (después de impuestos):</span>
+                            <span class="value">${result.utilidad_neta_uf.toFixed(2)} UF</span>
+                        </div>
+                        <div class="pricing-item">
+                            <span class="label">Margen Bruto:</span>
+                            <span class="value">${result.margen_bruto}%</span>
+                        </div>
+                        <div class="pricing-item">
+                            <span class="label">Margen Neto:</span>
+                            <span class="value">${result.margen_neto.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    <div class="pricing-breakdown">
+                        <h4>Detalle por Cargo:</h4>
+                        <table class="table-small">
+                            <thead>
+                                <tr>
+                                    <th>Cargo</th>
+                                    <th>Horas</th>
+                                    <th>Costo/Hora (UF)</th>
+                                    <th>Costo Total (UF)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.detalle.map(d => `
+                                    <tr>
+                                        <td>${d.cargo}</td>
+                                        <td>${d.horas}</td>
+                                        <td>${d.costo_hora_uf}</td>
+                                        <td>${d.costo_total_uf}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small-text">Valor UF: $${result.valor_uf.toLocaleString('es-CL')}</p>
+                </div>
+            </div>
+        `;
+        document.getElementById('resultado-pricing').innerHTML = html;
+    });
+}
+</script>
+{% endblock %}

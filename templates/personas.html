@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Personas - Comsulting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Gestión de Personas</h1>
+    <a href="{{ url_for('nueva_persona') }}" class="btn-primary">➕ Nueva Persona</a>
+</div>
+
+<div class="filters-section">
+    <div class="filter-group">
+        <label>Buscar:</label>
+        <input type="text" id="search-input" placeholder="Nombre, email, cargo..." onkeyup="filtrarTabla()">
+    </div>
+    <div class="filter-group">
+        <label>Área:</label>
+        <select id="filter-area" onchange="filtrarTabla()">
+            <option value="">Todas</option>
+            <option value="Externas">Externas</option>
+            <option value="Internas">Internas</option>
+            <option value="Asuntos Públicos">Asuntos Públicos</option>
+            <option value="Redes sociales">Redes sociales</option>
+            <option value="Diseño">Diseño</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Tipo Jornada:</label>
+        <select id="filter-jornada" onchange="filtrarTabla()">
+            <option value="">Todas</option>
+            <option value="full-time">Full-time</option>
+            <option value="media-jornada">Media Jornada</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="data-table" id="personas-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Cargo</th>
+                <th>Área</th>
+                <th>Jornada</th>
+                <th>Costo/Hora (UF)</th>
+                <th>Sueldo (UF)</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for persona in personas %}
+            <tr>
+                <td><strong>{{ persona.nombre }}</strong></td>
+                <td>{{ persona.email }}</td>
+                <td><span class="badge badge-primary">{{ persona.cargo }}</span></td>
+                <td>{{ persona.area }}</td>
+                <td>
+                    <span class="badge {% if persona.tipo_jornada == 'full-time' %}badge-success{% else %}badge-warning{% endif %}">
+                        {{ persona.tipo_jornada }}
+                    </span>
+                </td>
+                <td>{{ persona.costo_hora }}</td>
+                <td>{{ persona.sueldo_mensual if persona.sueldo_mensual else '-' }}</td>
+                <td>
+                    <button onclick="verProductividad({{ persona.id }})" class="btn-sm btn-secondary">📊 Productividad</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal para mostrar productividad -->
+<div id="modal-productividad" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarModal()">&times;</span>
+        <h2>Reporte de Productividad</h2>
+        <div id="contenido-productividad"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarTabla() {
+    const searchValue = document.getElementById('search-input').value.toLowerCase();
+    const areaFilter = document.getElementById('filter-area').value;
+    const jornadaFilter = document.getElementById('filter-jornada').value;
+    const table = document.getElementById('personas-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const text = row.textContent.toLowerCase();
+        const area = row.cells[3].textContent;
+        const jornada = row.cells[4].textContent.trim();
+
+        let showRow = true;
+
+        if (searchValue && !text.includes(searchValue)) {
+            showRow = false;
+        }
+
+        if (areaFilter && area !== areaFilter) {
+            showRow = false;
+        }
+
+        if (jornadaFilter && !jornada.includes(jornadaFilter)) {
+            showRow = false;
+        }
+
+        row.style.display = showRow ? '' : 'none';
+    }
+}
+
+function verProductividad(personaId) {
+    fetch(`/api/productividad/${personaId}/6`)
+        .then(response => response.json())
+        .then(data => {
+            let html = `
+                <div class="productividad-report">
+                    <div class="report-header">
+                        <h3>${data.persona}</h3>
+                        <p class="subtitle">${data.cargo} - ${data.area}</p>
+                        <p class="subtitle">Período: ${data.periodo_meses} meses</p>
+                    </div>
+                    
+                    <!-- Métricas Principales -->
+                    <div class="metrics-grid">
+                        <div class="metric-card highlight">
+                            <div class="metric-label">ROI Global</div>
+                            <div class="metric-value ${data.roi_global > 100 ? 'text-success' : 'text-danger'}">${data.roi_global}%</div>
+                            <div class="metric-desc">Retorno sobre inversión</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Margen Generado</div>
+                            <div class="metric-value">${data.margen_generado} UF</div>
+                            <div class="metric-desc">${data.margen_porcentual}% de margen</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Eficiencia</div>
+                            <div class="metric-value">${data.eficiencia_costos.toFixed(2)}x</div>
+                            <div class="metric-desc">Ingresos por cada UF de costo</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Productividad/Hora</div>
+                            <div class="metric-value">${data.productividad_por_hora.toFixed(2)} UF</div>
+                            <div class="metric-desc">Ingresos por hora trabajada</div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen Financiero -->
+                    <div class="report-section">
+                        <h4>📊 Resumen Financiero</h4>
+                        <div class="financial-summary">
+                            <div class="summary-row">
+                                <span>Ingresos Prorrateados:</span>
+                                <strong class="text-success">${data.ingresos_prorrateados} UF</strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Costo Total:</span>
+                                <strong>${data.costo_total} UF</strong>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Margen Generado:</span>
+                                <strong class="${data.margen_generado > 0 ? 'text-success' : 'text-danger'}">${data.margen_generado} UF</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas de Horas -->
+                    <div class="report-section">
+                        <h4>⏱️ Cumplimiento de Horas</h4>
+                        <div class="hours-summary">
+                            <div class="summary-row">
+                                <span>Horas Trabajadas:</span>
+                                <strong>${data.horas_trabajadas}h</strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Horas Esperadas:</span>
+                                <strong>${data.horas_esperadas}h</strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Cumplimiento:</span>
+                                <strong class="${data.porcentaje_cumplimiento >= 90 ? 'text-success' : data.porcentaje_cumplimiento >= 80 ? 'text-warning' : 'text-danger'}">${data.porcentaje_cumplimiento}%</strong>
+                            </div>
+                        </div>
+                        <div class="progress-bar" style="margin-top: 10px;">
+                            <div class="progress-fill" style="width: ${Math.min(data.porcentaje_cumplimiento, 100)}%; background-color: ${data.porcentaje_cumplimiento >= 90 ? '#10b981' : data.porcentaje_cumplimiento >= 80 ? '#f59e0b' : '#ef4444'}"></div>
+                        </div>
+                    </div>
+
+                    <!-- Detalle por Proyecto -->
+                    <div class="report-section">
+                        <h4>📁 Productividad por Proyecto</h4>
+                        <div class="table-responsive">
+                            <table class="data-table table-small">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Horas</th>
+                                        <th>% Partic.</th>
+                                        <th>Costo</th>
+                                        <th>Ingresos</th>
+                                        <th>Margen</th>
+                                        <th>ROI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.proyectos.map(p => `
+                                        <tr>
+                                            <td><strong>${p.cliente}</strong></td>
+                                            <td>${p.horas_trabajadas}h</td>
+                                            <td>${p.porcentaje_participacion}%</td>
+                                            <td>${p.costo_asignado} UF</td>
+                                            <td>${p.ingresos_prorrateados} UF</td>
+                                            <td class="${p.margen_generado > 0 ? 'text-success' : 'text-danger'}">${p.margen_generado} UF</td>
+                                            <td class="${p.roi_proyecto > 0 ? 'text-success' : 'text-danger'}">${p.roi_proyecto}%</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Recomendaciones -->
+                    <div class="report-recommendations">
+                        <h4>💡 Recomendaciones</h4>
+                        <div class="recommendation-item">
+                            <strong>Aumento de sueldo:</strong> 
+                            <span class="badge ${data.recomendacion_aumento === 'Sí' ? 'badge-success' : data.recomendacion_aumento === 'Revisar' ? 'badge-warning' : 'badge-danger'}">
+                                ${data.recomendacion_aumento}
+                            </span>
+                        </div>
+                        <div class="recommendation-item">
+                            <strong>Bono:</strong> 
+                            <span class="badge ${data.recomendacion_bono.includes('100%') ? 'badge-success' : data.recomendacion_bono.includes('75%') || data.recomendacion_bono.includes('50%') ? 'badge-warning' : 'badge-danger'}">
+                                ${data.recomendacion_bono}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="methodology-note">
+                        <h5>📖 Metodología de Cálculo</h5>
+                        <ul>
+                            <li><strong>Costos:</strong> Se asignan según horas trabajadas × costo/hora de la persona</li>
+                            <li><strong>Ingresos:</strong> Se prorratean según % de participación en costos del proyecto</li>
+                            <li><strong>ROI:</strong> (Ingresos - Costos) / Costos × 100</li>
+                            <li><strong>Eficiencia:</strong> Ingresos totales / Costos totales</li>
+                            <li><strong>Criterios bonos:</strong> 100% (ROI>200%, cumpl>95%), 75% (ROI>150%, cumpl>90%), 50% (ROI>120%, cumpl>85%)</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            document.getElementById('contenido-productividad').innerHTML = html;
+            document.getElementById('modal-productividad').style.display = 'block';
+        })
+        .catch(error => {
+            alert('Error al cargar productividad: ' + error);
+        });
+}
+
+function cerrarModal() {
+    document.getElementById('modal-productividad').style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera de él
+window.onclick = function(event) {
+    const modal = document.getElementById('modal-productividad');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

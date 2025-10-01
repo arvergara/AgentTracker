@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{% if servicio %}Editar{% else %}Nuevo{% endif %} Servicio - Comsulting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{% if servicio %}✏️ Editar{% else %}➕ Agregar Nuevo{% endif %} Servicio</h1>
+</div>
+
+<form method="POST" action="{% if servicio %}{{ url_for('editar_servicio', servicio_id=servicio.id) }}{% else %}{{ url_for('nuevo_servicio') }}{% endif %}" class="form-container">
+    <div class="form-group">
+        <label for="nombre">Nombre del Servicio *</label>
+        <input type="text" id="nombre" name="nombre" value="{{ servicio.nombre if servicio else '' }}" required
+               placeholder="Ej: Comunicaciones Externas, Gestión de Crisis, etc.">
+    </div>
+
+    <div class="form-group">
+        <label for="area">Área</label>
+        <select id="area" name="area">
+            <option value="">-- Seleccionar Área --</option>
+            <option value="Externas" {% if servicio and servicio.area == 'Externas' %}selected{% endif %}>Externas</option>
+            <option value="Internas" {% if servicio and servicio.area == 'Internas' %}selected{% endif %}>Internas</option>
+            <option value="Asuntos Públicos" {% if servicio and servicio.area == 'Asuntos Públicos' %}selected{% endif %}>Asuntos Públicos</option>
+            <option value="Redes sociales" {% if servicio and servicio.area == 'Redes sociales' %}selected{% endif %}>Redes sociales</option>
+            <option value="Diseño" {% if servicio and servicio.area == 'Diseño' %}selected{% endif %}>Diseño</option>
+        </select>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn-primary">💾 Guardar</button>
+        <a href="{{ url_for('listar_servicios') }}" class="btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+<div style="margin-top: 2rem; padding: 1rem; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
+    <h3 style="margin: 0 0 0.5rem 0; color: #1e40af; font-size: 1rem;">💡 Sugerencia</h3>
+    <p style="margin: 0; font-size: 0.9rem; color: #1e3a8a;">
+        Asegúrate de que el nombre del servicio sea claro y descriptivo. Los servicios se pueden asociar a proyectos específicos.
+    </p>
+</div>
+
+{% endblock %}

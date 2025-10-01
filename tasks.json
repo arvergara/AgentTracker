@@ -1,0 +1,66 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Iniciar Flask App",
+            "type": "shell",
+            "command": "python",
+            "args": ["app.py"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Ejecutar Análisis de Productividad",
+            "type": "shell",
+            "command": "python",
+            "args": ["analisis_productividad.py"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Inicializar Base de Datos",
+            "type": "shell",
+            "command": "python",
+            "args": ["-c", "from app import app, db; app.app_context().push(); db.create_all(); print('Base de datos inicializada!')"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Instalar/Actualizar Dependencias",
+            "type": "shell",
+            "command": "pip",
+            "args": ["install", "-r", "requirements.txt"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Formatear Código (Black)",
+            "type": "shell",
+            "command": "black",
+            "args": ["*.py"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Verificar Código (Flake8)",
+            "type": "shell",
+            "command": "flake8",
+            "args": ["*.py", "--max-line-length=88"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Ejecutar Tests",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["-v"],
+            "problemMatcher": []
+        }
+    ]
+}

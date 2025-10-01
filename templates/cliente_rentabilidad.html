@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}Análisis de Rentabilidad - {{ cliente.nombre }} - Comsulting{% endblock %}
+
+{% block styles %}
+<style>
+    .analysis-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+
+    .analysis-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+    }
+
+    .analysis-header .subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .period-selector {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .period-selector a {
+        padding: 0.5rem 1.5rem;
+        background: white;
+        border: 2px solid #667eea;
+        border-radius: 5px;
+        text-decoration: none;
+        color: #667eea;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .period-selector a.active {
+        background: #667eea;
+        color: white;
+    }
+
+    .period-selector a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+
+    .metric-card.positive {
+        border-left-color: #10b981;
+    }
+
+    .metric-card.negative {
+        border-left-color: #ef4444;
+    }
+
+    .metric-card.warning {
+        border-left-color: #f59e0b;
+    }
+
+    .metric-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .metric-value.positive {
+        color: #10b981;
+    }
+
+    .metric-value.negative {
+        color: #ef4444;
+    }
+
+    .chart-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .chart-container h3 {
+        margin: 0 0 1.5rem 0;
+        color: #1f2937;
+    }
+
+    .insights-section {
+        background: #fef3c7;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #f59e0b;
+        margin-bottom: 2rem;
+    }
+
+    .insights-section h3 {
+        margin: 0 0 1rem 0;
+        color: #92400e;
+    }
+
+    .insight-item {
+        margin-bottom: 0.75rem;
+        color: #78350f;
+    }
+
+    .insight-item strong {
+        color: #92400e;
+    }
+
+    .projects-section {
+        margin-bottom: 2rem;
+    }
+
+    .project-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+
+    .project-card.over-demand {
+        border-left: 4px solid #ef4444;
+    }
+
+    .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .project-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .project-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .project-status.rentable {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .project-status.no-rentable {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .project-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .project-metric {
+        font-size: 0.875rem;
+    }
+
+    .project-metric-label {
+        color: #6b7280;
+    }
+
+    .project-metric-value {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .people-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .people-section h3 {
+        margin: 0 0 1.5rem 0;
+    }
+
+    .person-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .person-item:last-child {
+        border-bottom: none;
+    }
+
+    .person-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .person-stats {
+        display: flex;
+        gap: 2rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analysis-header">
+    <h1>📊 Análisis de Rentabilidad Detallado</h1>
+    <p class="subtitle">{{ cliente.nombre }} - {{ analisis.resumen.fecha_inicio }} a {{ analisis.resumen.fecha_fin }}</p>
+</div>
+
+<!-- Period Selector -->
+<div class="period-selector">
+    <a href="?meses=3" {% if meses == 3 %}class="active"{% endif %}>3 Meses</a>
+    <a href="?meses=6" {% if meses == 6 %}class="active"{% endif %}>6 Meses</a>
+    <a href="?meses=12" {% if meses == 12 %}class="active"{% endif %}>1 Año</a>
+    <a href="?meses=24" {% if meses == 24 %}class="active"{% endif %}>2 Años</a>
+</div>
+
+<!-- Key Metrics -->
+<div class="metrics-grid">
+    <div class="metric-card {% if analisis.resumen.margen > 0 %}positive{% else %}negative{% endif %}">
+        <div class="metric-label">Margen Total</div>
+        <div class="metric-value {% if analisis.resumen.margen > 0 %}positive{% else %}negative{% endif %}">
+            {{ "%.1f"|format(analisis.resumen.margen) }}%
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">Ingresos Totales</div>
+        <div class="metric-value">{{ "%.1f"|format(analisis.resumen.ingresos_uf) }} UF</div>
+        <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+            ${{ "{:,.0f}".format(analisis.resumen.ingresos_pesos) }}
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">Costos Totales</div>
+        <div class="metric-value">{{ "%.1f"|format(analisis.resumen.costos_uf) }} UF</div>
+        <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+            ${{ "{:,.0f}".format(analisis.resumen.costos_pesos) }}
+        </div>
+    </div>
+
+    <div class="metric-card {% if analisis.resumen.margen_uf > 0 %}positive{% else %}negative{% endif %}">
+        <div class="metric-label">Utilidad Neta</div>
+        <div class="metric-value {% if analisis.resumen.margen_uf > 0 %}positive{% else %}negative{% endif %}">
+            {{ "%.1f"|format(analisis.resumen.margen_uf) }} UF
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">Horas Totales</div>
+        <div class="metric-value">{{ "%.0f"|format(analisis.resumen.horas_totales) }}h</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">Personas Involucradas</div>
+        <div class="metric-value">{{ analisis.resumen.personas_involucradas }}</div>
+    </div>
+
+    <div class="metric-card {% if analisis.resumen.meses_rentables > analisis.resumen.meses_no_rentables %}positive{% elif analisis.resumen.meses_rentables == analisis.resumen.meses_no_rentables %}warning{% else %}negative{% endif %}">
+        <div class="metric-label">Meses Rentables</div>
+        <div class="metric-value">{{ analisis.resumen.meses_rentables }} / {{ analisis.resumen.meses_rentables + analisis.resumen.meses_no_rentables }}</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">Cantidad de Proyectos</div>
+        <div class="metric-value">{{ analisis.analisis_proyectos|length }}</div>
+    </div>
+</div>
+
+<!-- Insights -->
+{% if analisis.insights %}
+<div class="insights-section">
+    <h3>💡 Insights Clave</h3>
+    {% if analisis.insights.proyecto_mas_rentable %}
+    <div class="insight-item">
+        <strong>✅ Proyecto más rentable:</strong> {{ analisis.insights.proyecto_mas_rentable.nombre }}
+        (Margen: {{ "%.1f"|format(analisis.insights.proyecto_mas_rentable.margen) }}%,
+        {{ "%.1f"|format(analisis.insights.proyecto_mas_rentable.margen_uf) }} UF)
+    </div>
+    {% endif %}
+
+    {% if analisis.insights.proyecto_menos_rentable %}
+    <div class="insight-item">
+        <strong>⚠️ Proyecto menos rentable:</strong> {{ analisis.insights.proyecto_menos_rentable.nombre }}
+        (Margen: {{ "%.1f"|format(analisis.insights.proyecto_menos_rentable.margen) }}%,
+        {{ "%.1f"|format(analisis.insights.proyecto_menos_rentable.margen_uf) }} UF)
+    </div>
+    {% endif %}
+
+    <div class="insight-item">
+        <strong>📈 Tendencia:</strong> El margen del cliente está
+        {% if analisis.insights.tendencia == 'mejorando' %}
+            <span style="color: #10b981;">mejorando</span> en el tiempo
+        {% elif analisis.insights.tendencia == 'empeorando' %}
+            <span style="color: #ef4444;">empeorando</span> en el tiempo
+        {% else %}
+            <span style="color: #6b7280;">estable</span>
+        {% endif %}
+    </div>
+
+    {% if analisis.insights.proyectos_sobre_demanda %}
+    <div class="insight-item">
+        <strong>🔴 Proyectos sobre-demandantes:</strong> {{ analisis.insights.proyectos_sobre_demanda|length }} proyecto(s)
+        excedió las horas estimadas en más del 20%
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Monthly Margin Chart -->
+<div class="chart-container">
+    <h3>📈 Evolución Mensual del Margen</h3>
+    <canvas id="marginChart" height="80"></canvas>
+</div>
+
+<!-- Hours and People Chart -->
+<div class="chart-container">
+    <h3>👥 Horas Dedicadas y Personas por Mes</h3>
+    <canvas id="hoursChart" height="80"></canvas>
+</div>
+
+<!-- Projects Analysis -->
+<div class="projects-section">
+    <h3>📁 Análisis por Proyecto</h3>
+    {% for proyecto in analisis.analisis_proyectos %}
+    <div class="project-card {% if proyecto.sobre_demandante %}over-demand{% endif %}">
+        <div class="project-header">
+            <div class="project-name">
+                {{ proyecto.nombre }}
+                {% if proyecto.sobre_demandante %}
+                <span style="color: #ef4444; font-size: 0.875rem;">⚠️ Sobre-demandante</span>
+                {% endif %}
+            </div>
+            <div class="project-status {% if proyecto.margen > 0 %}rentable{% else %}no-rentable{% endif %}">
+                {{ "Rentable" if proyecto.margen > 0 else "No Rentable" }}
+            </div>
+        </div>
+
+        <div class="project-metrics">
+            <div class="project-metric">
+                <div class="project-metric-label">Margen</div>
+                <div class="project-metric-value" style="color: {% if proyecto.margen > 0 %}#10b981{% else %}#ef4444{% endif %};">
+                    {{ "%.1f"|format(proyecto.margen) }}%
+                </div>
+            </div>
+
+            <div class="project-metric">
+                <div class="project-metric-label">Horas Trabajadas</div>
+                <div class="project-metric-value">{{ "%.0f"|format(proyecto.total_horas) }}h</div>
+            </div>
+
+            {% if proyecto.horas_estimadas %}
+            <div class="project-metric">
+                <div class="project-metric-label">Horas Estimadas</div>
+                <div class="project-metric-value">{{ "%.0f"|format(proyecto.horas_estimadas) }}h</div>
+            </div>
+
+            <div class="project-metric">
+                <div class="project-metric-label">Desviación</div>
+                <div class="project-metric-value" style="color: {% if proyecto.desviacion_horas > 0 %}#ef4444{% else %}#10b981{% endif %};">
+                    {{ "%.0f"|format(proyecto.desviacion_horas) }}h
+                    ({{ "%.0f"|format(proyecto.desviacion_porcentaje) }}%)
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="project-metric">
+                <div class="project-metric-label">Ingresos</div>
+                <div class="project-metric-value">{{ "%.1f"|format(proyecto.ingresos_uf) }} UF</div>
+            </div>
+
+            <div class="project-metric">
+                <div class="project-metric-label">Costos</div>
+                <div class="project-metric-value">{{ "%.1f"|format(proyecto.costos_uf) }} UF</div>
+            </div>
+
+            <div class="project-metric">
+                <div class="project-metric-label">Utilidad</div>
+                <div class="project-metric-value" style="color: {% if proyecto.margen_uf > 0 %}#10b981{% else %}#ef4444{% endif %};">
+                    {{ "%.1f"|format(proyecto.margen_uf) }} UF
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Top People -->
+<div class="people-section">
+    <h3>👥 Personas con Mayor Participación</h3>
+    {% for persona in analisis.top_personas[:10] %}
+    <div class="person-item">
+        <div class="person-name">{{ persona.nombre }}</div>
+        <div class="person-stats">
+            <span><strong>{{ "%.0f"|format(persona.total_horas) }}h</strong></span>
+            <span>{{ persona.proyectos_count }} proyecto(s)</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="{{ url_for('listar_clientes') }}" class="btn-secondary">← Volver a Clientes</a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Margin Chart
+    const marginCtx = document.getElementById('marginChart').getContext('2d');
+    const marginData = {{ analisis.analisis_mensual | tojson }};
+
+    new Chart(marginCtx, {
+        type: 'line',
+        data: {
+            labels: marginData.map(m => m.mes),
+            datasets: [
+                {
+                    label: 'Margen (%)',
+                    data: marginData.map(m => m.margen),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Línea de Rentabilidad',
+                    data: marginData.map(m => 0),
+                    borderColor: '#ef4444',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return 'Margen: ' + context.parsed.y.toFixed(1) + '%';
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Hours and People Chart
+    const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+
+    new Chart(hoursCtx, {
+        type: 'bar',
+        data: {
+            labels: marginData.map(m => m.mes),
+            datasets: [
+                {
+                    label: 'Horas Trabajadas',
+                    data: marginData.map(m => m.horas),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Personas Involucradas',
+                    data: marginData.map(m => m.personas),
+                    type: 'line',
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Horas'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Personas'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{% if persona %}Editar{% else %}Nueva{% endif %} Persona - Comsulting{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{% if persona %}Editar{% else %}Agregar Nueva{% endif %} Persona</h1>
+    <a href="{{ url_for('listar_personas') }}" class="btn-secondary">← Volver</a>
+</div>
+
+<div class="form-container">
+    <form method="POST" action="{% if persona %}{{ url_for('editar_persona', persona_id=persona.id) }}{% else %}{{ url_for('nueva_persona') }}{% endif %}" class="data-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nombre">Nombre Completo *</label>
+                <input type="text" id="nombre" name="nombre" value="{{ persona.nombre if persona else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" value="{{ persona.email if persona else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cargo">Cargo *</label>
+                <select id="cargo" name="cargo" required>
+                    <option value="">Seleccionar...</option>
+                    <option value="Socio" {% if persona and persona.cargo == 'Socio' %}selected{% endif %}>Socio</option>
+                    <option value="Socia" {% if persona and persona.cargo == 'Socia' %}selected{% endif %}>Socia</option>
+                    <option value="Director" {% if persona and persona.cargo == 'Director' %}selected{% endif %}>Director</option>
+                    <option value="Directora" {% if persona and persona.cargo == 'Directora' %}selected{% endif %}>Directora</option>
+                    <option value="Consultor Senior" {% if persona and persona.cargo == 'Consultor Senior' %}selected{% endif %}>Consultor Senior</option>
+                    <option value="Consultora Senior" {% if persona and persona.cargo == 'Consultora Senior' %}selected{% endif %}>Consultora Senior</option>
+                    <option value="Consultor" {% if persona and persona.cargo == 'Consultor' %}selected{% endif %}>Consultor</option>
+                    <option value="Consultora" {% if persona and persona.cargo == 'Consultora' %}selected{% endif %}>Consultora</option>
+                    <option value="Analista" {% if persona and persona.cargo == 'Analista' %}selected{% endif %}>Analista</option>
+                    <option value="Designer" {% if persona and persona.cargo == 'Designer' %}selected{% endif %}>Designer</option>
+                    <option value="Designer Senior" {% if persona and persona.cargo == 'Designer Senior' %}selected{% endif %}>Designer Senior</option>
+                    <option value="Community Manager" {% if persona and persona.cargo == 'Community Manager' %}selected{% endif %}>Community Manager</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="area">Área *</label>
+                <select id="area" name="area" required>
+                    <option value="">Seleccionar...</option>
+                    <option value="Externas" {% if persona and persona.area == 'Externas' %}selected{% endif %}>Externas</option>
+                    <option value="Internas" {% if persona and persona.area == 'Internas' %}selected{% endif %}>Internas</option>
+                    <option value="Asuntos Públicos" {% if persona and persona.area == 'Asuntos Públicos' %}selected{% endif %}>Asuntos Públicos</option>
+                    <option value="Redes sociales" {% if persona and persona.area == 'Redes sociales' %}selected{% endif %}>Redes sociales</option>
+                    <option value="Diseño" {% if persona and persona.area == 'Diseño' %}selected{% endif %}>Diseño</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="tipo_jornada">Tipo de Jornada *</label>
+                <select id="tipo_jornada" name="tipo_jornada" required>
+                    <option value="full-time" {% if persona and persona.tipo_jornada == 'full-time' %}selected{% endif %}>Full-time</option>
+                    <option value="media-jornada" {% if persona and persona.tipo_jornada == 'media-jornada' %}selected{% endif %}>Media Jornada</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="costo_hora">Costo por Hora (UF) *</label>
+                <input type="number" id="costo_hora" name="costo_hora" step="0.01" min="0" value="{{ persona.costo_hora if persona else '' }}" required>
+                <small class="form-help">Costo efectivo por hora trabajada</small>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="sueldo_mensual">Sueldo Mensual (UF)</label>
+                <input type="number" id="sueldo_mensual" name="sueldo_mensual" step="0.01" min="0" value="{{ persona.sueldo_mensual if persona else '' }}">
+                <small class="form-help">Opcional: Sueldo mensual en UF</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">{% if persona %}Actualizar{% else %}Guardar{% endif %} Persona</button>
+            <a href="{{ url_for('listar_personas') }}" class="btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
