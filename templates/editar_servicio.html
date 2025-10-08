@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Servicio - {{ servicio.nombre }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .back-link { color: #667eea; text-decoration: none; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 15px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+        .btn { padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; border: none; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-secondary { background: #f1f5f9; color: #475569; }
+        .flash { padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; }
+        .flash.error { background-color: #fee; color: #c33; border-left: 4px solid #c33; }
+        .flash.success { background-color: #efe; color: #3c3; border-left: 4px solid #3c3; }
+        .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .warning-box p { color: #92400e; font-size: 14px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="navbar"><h1>🎯 AgentTracker - Editar Servicio</h1></div>
+    <div class="container">
+        <div class="card">
+            <a href="{{ url_for('editar_cliente', cliente_id=servicio.cliente_id) }}" class="back-link">← Volver a {{ servicio.cliente.nombre }}</a>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div style="margin-top: 20px;">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <h2 style="margin: 20px 0;">Editar Servicio: {{ servicio.nombre }}</h2>
+
+            <div class="warning-box">
+                <p><strong>⚠️ Atención:</strong></p>
+                <p>• Si cambias el <strong>valor en UF</strong> de un servicio permanente, se actualizarán automáticamente todos los ingresos mensuales futuros (desde el mes actual en adelante)</p>
+                <p>• Los meses anteriores conservarán su valor original para mantener el histórico correcto</p>
+                <p>• Para servicios SPOT, los cambios no afectan automáticamente los ingresos registrados</p>
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="nombre">Nombre del Servicio</label>
+                    <input type="text" id="nombre" name="nombre" value="{{ servicio.nombre }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="valor_mensual_uf">Valor en UF</label>
+                    <input type="number" id="valor_mensual_uf" name="valor_mensual_uf" step="0.01" min="0" value="{{ servicio.valor_mensual_uf }}" required>
+                    <small style="color: #666; font-size: 13px;">Para servicios permanentes: valor mensual. Para SPOT: valor promedio mensual estimado.</small>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="es_spot" name="es_spot" {% if servicio.es_spot %}checked{% endif %} onchange="toggleFechasSpot()">
+                    <label for="es_spot" style="margin-bottom: 0;">Este es un servicio SPOT (proyecto puntual)</label>
+                </div>
+
+                <div id="fechas_spot" style="display: {% if servicio.es_spot %}block{% else %}none{% endif %}; background: #fef3c7; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <h4 style="color: #92400e; margin-bottom: 10px;">Período del Servicio SPOT</h4>
+                    <div class="form-group">
+                        <label for="fecha_inicio">Fecha Inicio</label>
+                        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ servicio.fecha_inicio.strftime('%Y-%m-%d') if servicio.fecha_inicio else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="fecha_fin">Fecha Fin</label>
+                        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ servicio.fecha_fin.strftime('%Y-%m-%d') if servicio.fecha_fin else '' }}">
+                    </div>
+                    <small style="color: #78350f;">Los ingresos mensuales se actualizarán automáticamente para este período.</small>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="activo" name="activo" {% if servicio.activo %}checked{% endif %}>
+                    <label for="activo" style="margin-bottom: 0;">Servicio Activo</label>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary">💾 Guardar Cambios</button>
+                    <a href="{{ url_for('editar_cliente', cliente_id=servicio.cliente_id) }}" class="btn btn-secondary">❌ Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleFechasSpot() {
+            const esSpot = document.getElementById('es_spot').checked;
+            const fechasSpot = document.getElementById('fechas_spot');
+            fechasSpot.style.display = esSpot ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

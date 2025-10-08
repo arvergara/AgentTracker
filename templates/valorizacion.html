@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora de Valorización</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .back-link { color: #667eea; text-decoration: none; }
+
+        /* Grid layout */
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        /* Formulario de recursos */
+        .recursos-section { margin-top: 20px; }
+        .recurso-row { display: grid; grid-template-columns: 2fr 1fr 120px auto; gap: 10px; margin-bottom: 15px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 6px; }
+        .recurso-row select, .recurso-row input { padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        .recurso-row .info { font-size: 12px; color: #666; margin-top: 4px; }
+        .recurso-row .tipo-badge { font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
+        .recurso-row .tipo-badge.spot { background: #fef3c7; color: #92400e; }
+        .recurso-row .tipo-badge.recurrente { background: #dbeafe; color: #1e40af; }
+        .btn-remove { background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-add { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 10px; }
+        .btn-calculate { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; width: 100%; margin-top: 20px; }
+        .btn-calculate:hover { transform: translateY(-2px); }
+
+        /* Parámetros */
+        .parametros { margin-top: 20px; }
+        .param-row { display: grid; grid-template-columns: 200px 1fr auto; gap: 15px; margin-bottom: 15px; align-items: center; }
+        .param-row label { font-weight: 500; color: #333; }
+        .param-row input { padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+        .param-row .unit { color: #666; font-size: 14px; }
+
+        /* Resultados */
+        .resultados { background: linear-gradient(135deg, #f8f9fa, #e5e7eb); padding: 25px; border-radius: 10px; }
+        .resultado-item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #d1d5db; }
+        .resultado-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .resultado-item .label { font-size: 13px; color: #666; margin-bottom: 5px; }
+        .resultado-item .value { font-size: 24px; font-weight: 700; color: #333; }
+        .resultado-item.highlight { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white; }
+        .resultado-item.highlight .label { color: rgba(255,255,255,0.9); }
+        .resultado-item.highlight .value { color: white; font-size: 32px; }
+
+        /* Detalle recursos */
+        .detalle-recursos { margin-top: 20px; }
+        .detalle-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .detalle-table th { background: #f8f9fa; padding: 10px; text-align: left; font-size: 12px; border-bottom: 2px solid #e0e0e0; }
+        .detalle-table td { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .detalle-table .numero { text-align: right; font-weight: 600; }
+
+        /* Estado inicial */
+        .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+        .empty-state p { font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="navbar"><h1>🎯 AgentTracker - Calculadora de Valorización</h1></div>
+
+    <div class="container">
+        <div class="card">
+            <a href="{{ url_for('dashboard') }}" class="back-link">← Volver al Dashboard</a>
+            <h2 style="margin: 20px 0;">Valorizar Proyecto o Licitación</h2>
+
+            <div class="main-grid">
+                <!-- Panel Izquierdo: Input -->
+                <div>
+                    <h3 style="margin-bottom: 15px; color: #333;">1. Información del Proyecto</h3>
+
+                    <div class="parametros">
+                        <div class="param-row">
+                            <label for="nombre_proyecto">Nombre Cotización</label>
+                            <input type="text" id="nombre_proyecto" placeholder="Ej: Licitación Sistema X" style="grid-column: 2 / 4;">
+                        </div>
+
+                        <div class="param-row">
+                            <label for="tipo_cliente">Cliente</label>
+                            <div style="grid-column: 2 / 4; display: flex; gap: 10px;">
+                                <select id="tipo_cliente" onchange="toggleClienteInput()" style="flex: 0 0 150px;">
+                                    <option value="existente">Existente</option>
+                                    <option value="nuevo">Nuevo</option>
+                                </select>
+                                <select id="cliente_existente" onchange="cargarServiciosCliente()" style="flex: 1;">
+                                    <option value="">Selecciona cliente...</option>
+                                    {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" id="cliente_nuevo" placeholder="Nombre nuevo cliente" style="flex: 1; display: none;">
+                            </div>
+                        </div>
+
+                        <div class="param-row">
+                            <label for="servicio_nombre">Nombre del Servicio</label>
+                            <div style="grid-column: 2 / 4;">
+                                <input type="text" id="servicio_nombre" list="servicios_existentes" placeholder="Escribe o selecciona un servicio existente" style="width: 100%;">
+                                <datalist id="servicios_existentes">
+                                    {% for servicio in servicios_nombres %}
+                                    <option value="{{ servicio.nombre }}">{{ servicio.nombre }} (usado {{ servicio.count }}x)</option>
+                                    {% endfor %}
+                                </datalist>
+                                <small style="color: #666; font-size: 12px; margin-top: 4px; display: block;">
+                                    💡 Tip: Usa nombres existentes para mantener consistencia en análisis
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="param-row" id="tipo_cliente_row" style="display: none;">
+                            <label for="nuevo_cliente_tipo">Tipo de Cliente</label>
+                            <select id="nuevo_cliente_tipo" style="grid-column: 2 / 4;">
+                                <option value="permanente">Permanente (ingreso mensual)</option>
+                                <option value="spot">SPOT (proyectos puntuales)</option>
+                            </select>
+                        </div>
+
+                        <div class="param-row">
+                            <label for="nuevo_servicio_valor">Valor Servicio (UF)</label>
+                            <div style="grid-column: 2 / 4; display: flex; gap: 10px; align-items: center;">
+                                <input type="number" id="nuevo_servicio_valor" step="0.1" min="0" placeholder="0.0" style="flex: 1;">
+                                <select id="nuevo_servicio_tipo" style="flex: 0 0 150px;">
+                                    <option value="mensual">/ mes</option>
+                                    <option value="spot">SPOT</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 25px 0 15px 0; color: #333;">2. Selecciona Recursos y Horas</h3>
+
+                    <div class="recursos-section" id="recursos-container">
+                        <!-- Las filas de recursos se agregan dinámicamente -->
+                    </div>
+
+                    <button class="btn-add" onclick="agregarRecurso()">➕ Agregar Persona</button>
+
+                    <div class="parametros">
+                        <h3 style="margin-bottom: 15px; color: #333;">3. Parámetros de Valorización</h3>
+
+                        <div class="param-row">
+                            <label for="overhead">Overhead</label>
+                            <input type="number" id="overhead" value="30" step="1" min="0" max="100">
+                            <span class="unit">%</span>
+                        </div>
+
+                        <div class="param-row">
+                            <label for="margen">Margen Objetivo</label>
+                            <input type="number" id="margen" value="20" step="1" min="0" max="100">
+                            <span class="unit">%</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-calculate" onclick="calcular()">💰 Calcular Valorización</button>
+                </div>
+
+                <!-- Panel Derecho: Resultados -->
+                <div>
+                    <h3 style="margin-bottom: 15px; color: #333;">Resultados</h3>
+
+                    <div id="resultados-container" class="resultados">
+                        <div class="empty-state">
+                            <div class="icon">📊</div>
+                            <p>Agrega recursos y haz clic en "Calcular Valorización"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de personas y clientes
+        const personas = {{ personas|tojson }};
+        const clientes = {{ clientes|tojson }};
+        let recursoCount = 0;
+        let ultimaValorizacion = null;
+
+        function agregarRecurso() {
+            recursoCount++;
+            const container = document.getElementById('recursos-container');
+
+            const recursoDiv = document.createElement('div');
+            recursoDiv.className = 'recurso-row';
+            recursoDiv.id = `recurso-${recursoCount}`;
+
+            let personasOptions = '<option value="">Selecciona persona...</option>';
+            personas.forEach(p => {
+                personasOptions += `<option value="${p.id}" data-costo="${p.costo_uf_hora}" data-cargo="${p.cargo}">${p.nombre}</option>`;
+            });
+
+            recursoDiv.innerHTML = `
+                <div>
+                    <select class="persona-select" onchange="mostrarCosto(${recursoCount})">
+                        ${personasOptions}
+                    </select>
+                    <div class="info" id="info-${recursoCount}"></div>
+                </div>
+                <div>
+                    <input type="number" class="horas-input" placeholder="Horas" step="0.5" min="0.5">
+                </div>
+                <div>
+                    <select class="tipo-horas-select">
+                        <option value="recurrente">/ mes</option>
+                        <option value="spot">SPOT</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn-remove" onclick="eliminarRecurso(${recursoCount})">🗑️</button>
+                </div>
+            `;
+
+            container.appendChild(recursoDiv);
+        }
+
+        function mostrarCosto(recursoId) {
+            const recursoDiv = document.getElementById(`recurso-${recursoId}`);
+            const select = recursoDiv.querySelector('.persona-select');
+            const info = document.getElementById(`info-${recursoId}`);
+
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption.value) {
+                const costo = selectedOption.getAttribute('data-costo');
+                const cargo = selectedOption.getAttribute('data-cargo');
+                info.textContent = `${cargo} - ${costo} UF/hora`;
+            } else {
+                info.textContent = '';
+            }
+        }
+
+        function eliminarRecurso(recursoId) {
+            const recursoDiv = document.getElementById(`recurso-${recursoId}`);
+            recursoDiv.remove();
+        }
+
+        async function calcular() {
+            const recursosContainer = document.getElementById('recursos-container');
+            const recursoRows = recursosContainer.querySelectorAll('.recurso-row');
+
+            if (recursoRows.length === 0) {
+                alert('Agrega al menos un recurso');
+                return;
+            }
+
+            // Recolectar datos
+            const recursos = [];
+            let valid = true;
+
+            recursoRows.forEach(row => {
+                const personaSelect = row.querySelector('.persona-select');
+                const horasInput = row.querySelector('.horas-input');
+                const tipoHorasSelect = row.querySelector('.tipo-horas-select');
+
+                if (!personaSelect.value || !horasInput.value) {
+                    valid = false;
+                    return;
+                }
+
+                recursos.push({
+                    persona_id: parseInt(personaSelect.value),
+                    horas: parseFloat(horasInput.value),
+                    tipo_horas: tipoHorasSelect.value  // 'spot' o 'recurrente'
+                });
+            });
+
+            if (!valid) {
+                alert('Completa todos los campos de recursos');
+                return;
+            }
+
+            const overhead = parseFloat(document.getElementById('overhead').value);
+            const margen = parseFloat(document.getElementById('margen').value);
+
+            // Llamar a la API
+            try {
+                const response = await fetch('/api/calcular-valorizacion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recursos: recursos,
+                        overhead: overhead,
+                        margen: margen
+                    })
+                });
+
+                const resultado = await response.json();
+                ultimaValorizacion = resultado;  // Guardar para poder guardar después
+                mostrarResultados(resultado);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al calcular la valorización');
+            }
+        }
+
+        function mostrarResultados(resultado) {
+            const container = document.getElementById('resultados-container');
+
+            let detalleHTML = '';
+            if (resultado.detalle_recursos.length > 0) {
+                detalleHTML = `
+                    <div class="detalle-recursos">
+                        <h4 style="margin-bottom: 10px; color: #333;">Detalle por Recurso</h4>
+                        <table class="detalle-table">
+                            <thead>
+                                <tr>
+                                    <th>Persona</th>
+                                    <th>Horas</th>
+                                    <th>Tipo</th>
+                                    <th>Costo/Hora</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${resultado.detalle_recursos.map(r => `
+                                    <tr>
+                                        <td>
+                                            <strong>${r.nombre}</strong><br>
+                                            <span style="font-size: 11px; color: #666;">${r.cargo}</span>
+                                        </td>
+                                        <td class="numero">${r.horas}</td>
+                                        <td style="text-align: center;">
+                                            <span class="tipo-badge ${r.tipo_horas}">${r.tipo_horas === 'spot' ? 'SPOT' : '/ mes'}</span>
+                                        </td>
+                                        <td class="numero">${r.costo_uf_hora} UF</td>
+                                        <td class="numero"><strong>${r.costo_total} UF</strong></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="resultado-item">
+                    <div class="label">HORAS TOTALES</div>
+                    <div class="value">${resultado.horas_totales} hrs</div>
+                </div>
+
+                <div class="resultado-item">
+                    <div class="label">COSTO DIRECTO (Personal)</div>
+                    <div class="value">${resultado.costo_directo} UF</div>
+                </div>
+
+                <div class="resultado-item">
+                    <div class="label">OVERHEAD (${resultado.overhead_porcentaje}%)</div>
+                    <div class="value">${resultado.overhead_uf} UF</div>
+                </div>
+
+                <div class="resultado-item">
+                    <div class="label">COSTO TOTAL</div>
+                    <div class="value">${resultado.costo_total} UF</div>
+                </div>
+
+                <div class="resultado-item">
+                    <div class="label">MARGEN (${resultado.margen_porcentaje}%)</div>
+                    <div class="value">${resultado.margen_uf} UF</div>
+                </div>
+
+                <div class="resultado-item highlight">
+                    <div class="label">💰 PRECIO SUGERIDO</div>
+                    <div class="value">${resultado.precio_sugerido} UF</div>
+                </div>
+
+                ${detalleHTML}
+
+                <button onclick="guardarValorizacion()" style="background: #10b981; color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; margin-top: 20px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                    💾 Guardar Valorización
+                </button>
+            `;
+        }
+
+        function toggleClienteInput() {
+            const tipo = document.getElementById('tipo_cliente').value;
+            const clienteExistente = document.getElementById('cliente_existente');
+            const clienteNuevo = document.getElementById('cliente_nuevo');
+            const tipoClienteRow = document.getElementById('tipo_cliente_row');
+
+            if (tipo === 'nuevo') {
+                clienteExistente.style.display = 'none';
+                clienteNuevo.style.display = 'block';
+                tipoClienteRow.style.display = 'grid';
+                // Limpiar servicios
+                document.getElementById('servicio_existente').innerHTML = '<option value="">Primero define el cliente...</option>';
+            } else {
+                clienteExistente.style.display = 'block';
+                clienteNuevo.style.display = 'none';
+                tipoClienteRow.style.display = 'none';
+                cargarServiciosCliente();
+            }
+        }
+
+
+        async function guardarValorizacion() {
+            const nombre = document.getElementById('nombre_proyecto').value;
+            if (!nombre) {
+                alert('Debes ingresar un nombre para la cotización');
+                return;
+            }
+
+            if (!ultimaValorizacion) {
+                alert('Primero debes calcular la valorización');
+                return;
+            }
+
+            // Datos del cliente
+            const tipoCliente = document.getElementById('tipo_cliente').value;
+            let clienteData = null;
+
+            if (tipoCliente === 'nuevo') {
+                const nombreCliente = document.getElementById('cliente_nuevo').value;
+                if (!nombreCliente) {
+                    alert('Debes ingresar el nombre del nuevo cliente');
+                    return;
+                }
+                clienteData = {
+                    nuevo: true,
+                    nombre: nombreCliente,
+                    tipo: document.getElementById('nuevo_cliente_tipo').value
+                };
+            } else {
+                const clienteId = document.getElementById('cliente_existente').value;
+                if (clienteId) {
+                    clienteData = {
+                        nuevo: false,
+                        id: parseInt(clienteId)
+                    };
+                }
+            }
+
+            // Datos del servicio
+            const nombreServicio = document.getElementById('servicio_nombre').value;
+            const valorServicio = document.getElementById('nuevo_servicio_valor').value;
+
+            let servicioData = null;
+            if (nombreServicio && valorServicio) {
+                if (!clienteData) {
+                    alert('Debes seleccionar o crear un cliente antes de crear un servicio');
+                    return;
+                }
+
+                servicioData = {
+                    nuevo: true,
+                    nombre: nombreServicio,
+                    valor_uf: parseFloat(valorServicio),
+                    es_spot: document.getElementById('nuevo_servicio_tipo').value === 'spot'
+                };
+            }
+
+            try {
+                const response = await fetch('/api/guardar-valorizacion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        cliente: clienteData,
+                        servicio: servicioData,
+                        ...ultimaValorizacion
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ Valorización guardada exitosamente' +
+                          (result.nuevo_cliente ? '\n✅ Cliente creado' : '') +
+                          (result.nuevo_servicio ? '\n✅ Servicio creado' : ''));
+
+                    // Recargar página para actualizar listas
+                    location.reload();
+                } else {
+                    alert('Error al guardar: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar la valorización');
+            }
+        }
+
+        // Agregar un recurso inicial al cargar
+        window.onload = function() {
+            agregarRecurso();
+        };
+    </script>
+</body>
+</html>

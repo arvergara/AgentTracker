@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .back-link { color: #667eea; text-decoration: none; }
+        .btn { padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { transform: translateY(-2px); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f8f9fa; font-weight: 600; }
+        tr:hover { background: #f8f9fa; }
+        .socia { background: #fef3c7; }
+        .inactivo { opacity: 0.5; }
+        .acciones { display: flex; gap: 5px; }
+        .btn-edit { background: #667eea; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; }
+        .btn-desactivar { background: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; border: none; font-size: 13px; cursor: pointer; }
+        .flash { padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; }
+        .flash.error { background-color: #fee; color: #c33; border-left: 4px solid #c33; }
+        .flash.success { background-color: #efe; color: #3c3; border-left: 4px solid #3c3; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 AgentTracker - Personal</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <a href="{{ url_for('dashboard') }}" class="back-link">← Volver al Dashboard</a>
+                <a href="{{ url_for('nuevo_personal') }}" class="btn">+ Agregar Persona</a>
+            </div>
+
+            <h2 style="margin-bottom: 20px;">Personal de Comsulting</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Cargo</th>
+                        <th>Email</th>
+                        <th>Costo Mensual</th>
+                        <th>Costo/Hora (UF)</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for persona in personas %}
+                    <tr class="{% if persona.es_socia %}socia{% endif %} {% if not persona.activo %}inactivo{% endif %}">
+                        <td>
+                            {{ persona.nombre }}
+                            {% if persona.es_socia %}⭐{% endif %}
+                            {% if not persona.activo %} (INACTIVO){% endif %}
+                        </td>
+                        <td>{{ persona.cargo }}</td>
+                        <td>{{ persona.email }}</td>
+                        <td>${{ "{:,.0f}".format(persona.costo_mensual_empresa) }}</td>
+                        <td>{{ "%.4f"|format(persona.costo_hora_uf) }} UF</td>
+                        <td>
+                            {% if persona.activo %}
+                                <span style="color: #10b981;">● Activo</span>
+                            {% else %}
+                                <span style="color: #ef4444;">● Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="acciones">
+                                <a href="{{ url_for('editar_personal', persona_id=persona.id) }}" class="btn-edit">Editar</a>
+                                {% if persona.activo %}
+                                <form method="POST" action="{{ url_for('desactivar_personal', persona_id=persona.id) }}" style="display: inline;" onsubmit="return confirm('¿Desactivar a {{ persona.nombre }}?');">
+                                    <button type="submit" class="btn-desactivar">Desactivar</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

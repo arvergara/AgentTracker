@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Horas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_simplified.css') if url_for('static', filename='css/style_simplified.css') else '' }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 15px; }
+        textarea { min-height: 100px; resize: vertical; }
+        button { padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        button:hover { transform: translateY(-2px); }
+        .back-link { color: #667eea; text-decoration: none; }
+        .flash { padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; }
+        .flash.error { background-color: #fee; color: #c33; border-left: 4px solid #c33; }
+        .flash.success { background-color: #efe; color: #3c3; border-left: 4px solid #3c3; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 AgentTracker - Registrar Horas</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <a href="{{ url_for('dashboard') }}" class="back-link">← Volver al Dashboard</a>
+            <h2 style="margin: 20px 0;">Registrar Horas Trabajadas</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="area_id">Área *</label>
+                    <select name="area_id" id="area_id" required onchange="cargarServicios()">
+                        <option value="">Selecciona un área...</option>
+                        {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="servicio_id">Servicio *</label>
+                    <select name="servicio_id" id="servicio_id" required disabled onchange="cargarTareas()">
+                        <option value="">Primero selecciona un área...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tarea_id">Tarea *</label>
+                    <select name="tarea_id" id="tarea_id" required disabled>
+                        <option value="">Primero selecciona un servicio...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha">Fecha *</label>
+                    <input type="date" name="fecha" id="fecha" required value="{{ fecha_hoy }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="horas">Horas Trabajadas *</label>
+                    <input type="number" name="horas" id="horas" step="0.5" min="0.5" max="24" required placeholder="Ej: 4.5">
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Descripción (opcional)</label>
+                    <textarea name="descripcion" id="descripcion" placeholder="Describe brevemente el trabajo realizado..."></textarea>
+                </div>
+
+                <button type="submit">Registrar Horas</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function cargarServicios() {
+            const areaId = document.getElementById('area_id').value;
+            const servicioSelect = document.getElementById('servicio_id');
+            const tareaSelect = document.getElementById('tarea_id');
+
+            // Reset tareas
+            tareaSelect.disabled = true;
+            tareaSelect.innerHTML = '<option value="">Primero selecciona un servicio...</option>';
+
+            if (!areaId) {
+                servicioSelect.disabled = true;
+                servicioSelect.innerHTML = '<option value="">Primero selecciona un área...</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/area/${areaId}/servicios`);
+                const servicios = await response.json();
+
+                servicioSelect.innerHTML = '<option value="">Selecciona un servicio...</option>';
+
+                servicios.forEach(servicio => {
+                    const option = document.createElement('option');
+                    option.value = servicio.id;
+                    option.textContent = servicio.nombre;
+                    servicioSelect.appendChild(option);
+                });
+
+                servicioSelect.disabled = false;
+            } catch (error) {
+                console.error('Error cargando servicios:', error);
+                servicioSelect.innerHTML = '<option value="">Error cargando servicios</option>';
+            }
+        }
+
+        async function cargarTareas() {
+            const servicioId = document.getElementById('servicio_id').value;
+            const tareaSelect = document.getElementById('tarea_id');
+
+            if (!servicioId) {
+                tareaSelect.disabled = true;
+                tareaSelect.innerHTML = '<option value="">Primero selecciona un servicio...</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/servicio/${servicioId}/tareas`);
+                const tareas = await response.json();
+
+                tareaSelect.innerHTML = '<option value="">Selecciona una tarea...</option>';
+
+                tareas.forEach(tarea => {
+                    const option = document.createElement('option');
+                    option.value = tarea.id;
+                    option.textContent = tarea.nombre;
+                    tareaSelect.appendChild(option);
+                });
+
+                tareaSelect.disabled = false;
+            } catch (error) {
+                console.error('Error cargando tareas:', error);
+                tareaSelect.innerHTML = '<option value="">Error cargando tareas</option>';
+            }
+        }
+    </script>
+</body>
+</html>

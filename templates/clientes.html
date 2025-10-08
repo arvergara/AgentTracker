@@ -1,203 +1,133 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Clientes</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .back-link { color: #667eea; text-decoration: none; }
+        .section-title { font-size: 24px; color: #333; margin: 30px 0 20px 0; padding-bottom: 10px; border-bottom: 3px solid #667eea; }
+        .client-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-top: 20px; }
+        .client-card { background: white; border: 2px solid #e0e0e0; padding: 20px; border-radius: 8px; }
+        .client-card.spot { border-left: 4px solid #f59e0b; }
+        .client-card.permanente { border-left: 4px solid #10b981; }
+        .client-card h3 { color: #333; margin-bottom: 10px; font-size: 18px; }
+        .client-card .tipo { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+        .tipo.permanente { background: #d1fae5; color: #065f46; }
+        .tipo.spot { background: #fed7aa; color: #92400e; }
+        .servicios-list { margin-top: 10px; }
+        .servicio-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .ingreso-total { font-size: 24px; font-weight: 700; color: #10b981; margin-top: 10px; }
+        .ingreso-anual { font-size: 20px; font-weight: 700; color: #f59e0b; margin-top: 10px; }
+        .summary-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .summary-item h4 { font-size: 14px; opacity: 0.9; margin-bottom: 10px; }
+        .summary-item .value { font-size: 32px; font-weight: 700; }
+        .summary-item .label { font-size: 13px; opacity: 0.8; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="navbar"><h1>🎯 AgentTracker - Clientes</h1></div>
+    <div class="container">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="{{ url_for('dashboard') }}" class="back-link">← Volver al Dashboard</a>
+                <a href="{{ url_for('nuevo_cliente') }}" style="background: #667eea; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">➕ Nuevo Cliente</a>
+            </div>
+            <h2 style="margin: 20px 0;">Clientes de Comsulting</h2>
 
-{% block title %}Clientes - Comsulting{% endblock %}
-
-{% block content %}
-<div class="page-header">
-    <h1>Gestión de Clientes</h1>
-    <a href="{{ url_for('nuevo_cliente') }}" class="btn-primary">➕ Nuevo Cliente</a>
-</div>
-
-<div class="filters-section">
-    <div class="filter-group">
-        <label>Buscar:</label>
-        <input type="text" id="search-input" placeholder="Nombre del cliente..." onkeyup="filtrarClientes()">
-    </div>
-    <div class="filter-group">
-        <label>Tipo:</label>
-        <select id="filter-tipo" onchange="filtrarClientes()">
-            <option value="">Todos</option>
-            <option value="permanente">Permanente</option>
-            <option value="spot">Spot</option>
-        </select>
-    </div>
-    <div class="filter-group">
-        <label>Área:</label>
-        <select id="filter-area" onchange="filtrarClientes()">
-            <option value="">Todas</option>
-            <option value="Externas">Externas</option>
-            <option value="Internas">Internas</option>
-            <option value="Asuntos Públicos">Asuntos Públicos</option>
-            <option value="Redes sociales">Redes sociales</option>
-            <option value="Diseño">Diseño</option>
-        </select>
-    </div>
-</div>
-
-<div class="table-responsive">
-    <table class="data-table" id="clientes-table">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Área</th>
-                <th>Fecha Inicio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cliente in clientes %}
-            <tr>
-                <td><strong>{{ cliente.nombre }}</strong></td>
-                <td>
-                    <span class="badge {% if cliente.tipo == 'permanente' %}badge-primary{% else %}badge-warning{% endif %}">
-                        {{ cliente.tipo|upper }}
-                    </span>
-                </td>
-                <td>{{ cliente.area }}</td>
-                <td>{{ cliente.fecha_inicio.strftime('%d/%m/%Y') if cliente.fecha_inicio else '-' }}</td>
-                <td>
-                    <span class="badge {% if cliente.activo %}badge-success{% else %}badge-danger{% endif %}">
-                        {{ 'Activo' if cliente.activo else 'Inactivo' }}
-                    </span>
-                </td>
-                <td>
-                    <a href="{{ url_for('editar_cliente', cliente_id=cliente.id) }}" class="btn-sm btn-warning">✏️ Editar</a>
-                    <button onclick="verRentabilidad({{ cliente.id }}, 6)" class="btn-sm btn-secondary">📊 6M</button>
-                    <button onclick="verRentabilidad({{ cliente.id }}, 12)" class="btn-sm btn-secondary">📊 1A</button>
-                    <a href="{{ url_for('cliente_rentabilidad', cliente_id=cliente.id, meses=12) }}" class="btn-sm btn-primary">📈 Análisis Detallado</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- Modal para mostrar rentabilidad -->
-<div id="modal-rentabilidad" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="cerrarModal()">&times;</span>
-        <h2>Análisis de Rentabilidad</h2>
-        <div id="contenido-rentabilidad"></div>
-    </div>
-</div>
-
-{% endblock %}
-
-{% block scripts %}
-<script>
-function filtrarClientes() {
-    const searchValue = document.getElementById('search-input').value.toLowerCase();
-    const tipoFilter = document.getElementById('filter-tipo').value;
-    const areaFilter = document.getElementById('filter-area').value;
-    const table = document.getElementById('clientes-table');
-    const rows = table.getElementsByTagName('tr');
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const nombre = row.cells[0].textContent.toLowerCase();
-        const tipo = row.cells[1].textContent.toLowerCase();
-        const area = row.cells[2].textContent;
-
-        let showRow = true;
-
-        if (searchValue && !nombre.includes(searchValue)) {
-            showRow = false;
-        }
-
-        if (tipoFilter && !tipo.includes(tipoFilter)) {
-            showRow = false;
-        }
-
-        if (areaFilter && area !== areaFilter) {
-            showRow = false;
-        }
-
-        row.style.display = showRow ? '' : 'none';
-    }
-}
-
-function verRentabilidad(clienteId, meses) {
-    fetch(`/api/rentabilidad/cliente/${clienteId}/${meses}`)
-        .then(response => response.json())
-        .then(data => {
-            let html = `
-                <div class="rentabilidad-report">
-                    <div class="report-header">
-                        <h3>${data.cliente}</h3>
-                        <p class="subtitle">Análisis de ${data.periodo_meses} meses</p>
+            <!-- Resumen -->
+            <div class="summary-box">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <h4>INGRESOS MENSUALES (Permanentes)</h4>
+                        <div class="value">{{ total_mensual_permanentes }} UF</div>
+                        <div class="label">{{ permanentes_data|length }} clientes</div>
                     </div>
-                    
-                    <div class="report-stats">
-                        <div class="stat-box highlight">
-                            <span class="stat-label">Margen</span>
-                            <span class="stat-value-large ${data.margen > 0 ? 'text-success' : 'text-danger'}">${data.margen}%</span>
-                        </div>
+                    <div class="summary-item">
+                        <h4>INGRESOS ANUALES (SPOT)</h4>
+                        <div class="value">{{ total_anual_spot }} UF</div>
+                        <div class="label">{{ spot_data|length }} clientes</div>
                     </div>
-
-                    <div class="report-details">
-                        <h4>Ingresos</h4>
-                        <div class="detail-row">
-                            <span>Total en UF:</span>
-                            <strong>${data.ingresos_uf} UF</strong>
-                        </div>
-                        <div class="detail-row">
-                            <span>Total en Pesos:</span>
-                            <strong>$${data.ingresos_pesos.toLocaleString('es-CL')}</strong>
-                        </div>
-
-                        <h4>Costos</h4>
-                        <div class="detail-row">
-                            <span>Total en UF:</span>
-                            <strong>${data.costos_uf} UF</strong>
-                        </div>
-                        <div class="detail-row">
-                            <span>Total en Pesos:</span>
-                            <strong>$${data.costos_pesos.toLocaleString('es-CL')}</strong>
-                        </div>
-
-                        <h4>Utilidad Bruta</h4>
-                        <div class="detail-row">
-                            <span>En UF:</span>
-                            <strong class="${data.utilidad_bruta_uf > 0 ? 'text-success' : 'text-danger'}">${data.utilidad_bruta_uf} UF</strong>
-                        </div>
-                        <div class="detail-row">
-                            <span>En Pesos:</span>
-                            <strong class="${data.utilidad_bruta_pesos > 0 ? 'text-success' : 'text-danger'}">$${data.utilidad_bruta_pesos.toLocaleString('es-CL')}</strong>
-                        </div>
-
-                        <h4>Utilidad Neta (después de impuestos)</h4>
-                        <div class="detail-row">
-                            <span>En UF:</span>
-                            <strong class="${data.utilidad_neta_uf > 0 ? 'text-success' : 'text-danger'}">${data.utilidad_neta_uf} UF</strong>
-                        </div>
-                        <div class="detail-row">
-                            <span>En Pesos:</span>
-                            <strong class="${data.utilidad_neta_pesos > 0 ? 'text-success' : 'text-danger'}">$${data.utilidad_neta_pesos.toLocaleString('es-CL')}</strong>
-                        </div>
+                    <div class="summary-item">
+                        <h4>INGRESO ANUAL TOTAL</h4>
+                        <div class="value">{{ (total_mensual_permanentes * 12 + total_anual_spot)|round(2) }} UF</div>
+                        <div class="label">Proyección anual completa</div>
                     </div>
-
-                    <p class="report-note">Valor UF: $${data.valor_uf.toLocaleString('es-CL')}</p>
                 </div>
-            `;
-            document.getElementById('contenido-rentabilidad').innerHTML = html;
-            document.getElementById('modal-rentabilidad').style.display = 'block';
-        })
-        .catch(error => {
-            alert('Error al cargar rentabilidad: ' + error);
-        });
-}
+            </div>
 
-function cerrarModal() {
-    document.getElementById('modal-rentabilidad').style.display = 'none';
-}
+            <!-- CLIENTE INTERNO: COMSULTING -->
+            <h2 class="section-title">🏢 Cliente Interno</h2>
+            <div class="client-grid">
+                {% for data in permanentes_data %}
+                {% if data.cliente.nombre == 'COMSULTING' %}
+                <div class="client-card permanente" style="border-left: 4px solid #667eea;">
+                    <span class="tipo permanente" style="background: #e0e7ff; color: #3730a3;">INTERNO</span>
+                    <h3>{{ data.cliente.nombre }}</h3>
+                    <div style="color: #667eea; font-size: 14px; margin-top: 10px;">Trabajos Administrativos e Internos</div>
+                    <div class="servicios-list">
+                        <strong>Servicios ({{ data.num_servicios }}):</strong>
+                        {% for servicio in data.servicios %}
+                        <div class="servicio-item">{{ servicio.nombre }}</div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <a href="{{ url_for('editar_cliente', cliente_id=data.cliente.id) }}" style="background: #667eea; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 14px;">✏️ Editar</a>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
 
-window.onclick = function(event) {
-    const modal = document.getElementById('modal-rentabilidad');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
-}
-</script>
-{% endblock %}
+            <!-- CLIENTES PERMANENTES -->
+            <h2 class="section-title">📌 Clientes Permanentes (Ingreso Mensual)</h2>
+            <div class="client-grid">
+                {% for data in permanentes_data %}
+                {% if data.cliente.nombre != 'COMSULTING' %}
+                <div class="client-card permanente">
+                    <span class="tipo permanente">PERMANENTE</span>
+                    <h3>{{ data.cliente.nombre }}</h3>
+                    <div class="ingreso-total">{{ data.ingreso_mensual }} UF/mes</div>
+                    <div class="servicios-list">
+                        <strong>Servicios ({{ data.num_servicios }}):</strong>
+                        {% for servicio in data.servicios %}
+                        <div class="servicio-item">{{ servicio.nombre }} - {{ servicio.valor_mensual_uf }} UF</div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <a href="{{ url_for('editar_cliente', cliente_id=data.cliente.id) }}" style="background: #667eea; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 14px;">✏️ Editar</a>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- CLIENTES SPOT -->
+            <h2 class="section-title">⚡ Clientes SPOT (Ingreso Anual)</h2>
+            <div class="client-grid">
+                {% for data in spot_data %}
+                <div class="client-card spot">
+                    <span class="tipo spot">SPOT</span>
+                    <h3>{{ data.cliente.nombre }}</h3>
+                    <div class="ingreso-anual">{{ data.ingreso_anual }} UF/año</div>
+                    <div class="servicios-list">
+                        <strong>Servicios ({{ data.num_servicios }}):</strong>
+                        {% for servicio in data.servicios %}
+                        <div class="servicio-item">{{ servicio.nombre }} - {{ servicio.valor_mensual_uf }} UF (promedio mensual)</div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <a href="{{ url_for('editar_cliente', cliente_id=data.cliente.id) }}" style="background: #f59e0b; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 14px;">✏️ Editar</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

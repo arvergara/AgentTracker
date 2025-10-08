@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AgentTracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar h1 {
+            font-size: 24px;
+        }
+
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .navbar a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .welcome {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .welcome h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .welcome p {
+            color: #666;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid;
+        }
+
+        .stat-card.primary { border-left-color: #667eea; }
+        .stat-card.success { border-left-color: #10b981; }
+        .stat-card.warning { border-left-color: #f59e0b; }
+        .stat-card.info { border-left-color: #3b82f6; }
+        .stat-card.danger { border-left-color: #ef4444; }
+
+        .stat-card h3 {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-card .label {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .quick-actions {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .quick-actions h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .socia-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .socia-section h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .socia-section p {
+            color: #78350f;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 AgentTracker</h1>
+        <div class="user-info">
+            <span>👤 {{ persona.nombre }}{% if persona.es_socia %} (Socia){% endif %}</span>
+            <a href="{{ url_for('cambiar_password') }}">Cambiar Contraseña</a>
+            <a href="{{ url_for('logout') }}">Salir</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="welcome">
+            <h2>¡Hola {{ persona.nombre.split()[0] }}! 👋</h2>
+            <p>Bienvenida al sistema de gestión de Comsulting</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <h3>HORAS DEL MES</h3>
+                <div class="value">{{ horas_mes|formato_numero }}</div>
+                <div class="label">Mes actual</div>
+            </div>
+
+            <div class="stat-card info">
+                <h3>HORAS DEL AÑO</h3>
+                <div class="value">{{ horas_año|formato_numero }}</div>
+                <div class="label">Año 2025</div>
+            </div>
+
+            <div class="stat-card warning">
+                <h3>TU CARGO</h3>
+                <div class="value" style="font-size: 20px;">{{ persona.cargo }}</div>
+                <div class="label">{{ persona.email }}</div>
+            </div>
+        </div>
+
+        {% if stats_empresa %}
+        <div class="socia-section">
+            <h3>📊 Información Empresarial (Solo Socias)</h3>
+            <p>Tienes acceso completo a todas las estadísticas de la empresa</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card success">
+                <h3>INGRESOS DEL MES</h3>
+                <div class="value">{{ stats_empresa.ingresos_mes|formato_numero }} UF</div>
+                <div class="label">Mes actual</div>
+            </div>
+
+            <div class="stat-card danger">
+                <h3>COSTOS DEL MES</h3>
+                <div class="value">{{ stats_empresa.costos_mes|formato_numero }} UF</div>
+                <div class="label">Mes actual</div>
+            </div>
+
+            <div class="stat-card {% if stats_empresa.margen_uf > 0 %}success{% else %}danger{% endif %}">
+                <h3>MARGEN</h3>
+                <div class="value">{{ stats_empresa.margen_uf|formato_numero }} UF</div>
+                <div class="label">{{ stats_empresa.margen_porcentaje|formato_numero }}%</div>
+            </div>
+
+            <div class="stat-card info">
+                <h3>PERSONAL ACTIVO</h3>
+                <div class="value">{{ stats_empresa.personal_activo }}</div>
+                <div class="label">Personas</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="quick-actions">
+            <h3>Acciones Rápidas</h3>
+            <div class="action-buttons">
+                <a href="{{ url_for('registrar_horas') }}" class="btn btn-primary">
+                    ➕ Registrar Horas
+                </a>
+                <a href="{{ url_for('mis_horas') }}" class="btn btn-secondary">
+                    📋 Ver Mis Horas
+                </a>
+                {% if persona.es_socia %}
+                <a href="{{ url_for('ver_clientes') }}" class="btn btn-secondary">
+                    👥 Ver Clientes
+                </a>
+                <a href="{{ url_for('ver_personal') }}" class="btn btn-secondary">
+                    👔 Ver Personal
+                </a>
+                <a href="{{ url_for('rentabilidad') }}" class="btn btn-secondary">
+                    📊 Rentabilidad
+                </a>
+                <a href="{{ url_for('capacidad') }}" class="btn btn-secondary">
+                    👤 Capacidad
+                </a>
+                <a href="{{ url_for('valorizacion') }}" class="btn btn-secondary">
+                    💰 Valorizar Proyecto
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

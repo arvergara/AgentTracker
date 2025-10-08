@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Editar' if persona else 'Agregar' }} Personal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #333; margin-bottom: 8px; font-weight: 500; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 15px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+        button { padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        button:hover { transform: translateY(-2px); }
+        .back-link { color: #667eea; text-decoration: none; }
+        .flash { padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; }
+        .flash.error { background-color: #fee; color: #c33; border-left: 4px solid #c33; }
+        .flash.success { background-color: #efe; color: #3c3; border-left: 4px solid #3c3; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 AgentTracker - {{ 'Editar' if persona else 'Agregar' }} Personal</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <a href="{{ url_for('ver_personal') }}" class="back-link">← Volver a Personal</a>
+            <h2 style="margin: 20px 0;">{{ 'Editar Persona' if persona else 'Agregar Nueva Persona' }}</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="nombre">Nombre Completo *</label>
+                    <input type="text" name="nombre" id="nombre" required
+                           value="{{ persona.nombre if persona else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" name="email" id="email" required
+                           value="{{ persona.email if persona else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="cargo">Cargo *</label>
+                    <input type="text" name="cargo" id="cargo" required
+                           value="{{ persona.cargo if persona else '' }}"
+                           placeholder="Ej: Socia, Director, Consultor Senior">
+                </div>
+
+                <div class="form-group">
+                    <label for="costo_mensual">Costo Mensual Empresa (CLP) *</label>
+                    <input type="number" name="costo_mensual" id="costo_mensual" required
+                           value="{{ persona.costo_mensual_empresa if persona else '' }}"
+                           step="1" min="0" placeholder="Ej: 5000000">
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_ingreso">Fecha de Ingreso</label>
+                    <input type="date" name="fecha_ingreso" id="fecha_ingreso"
+                           value="{{ persona.fecha_ingreso.strftime('%Y-%m-%d') if persona and persona.fecha_ingreso else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="es_socia" id="es_socia"
+                               {{ 'checked' if persona and persona.es_socia else '' }}>
+                        <label for="es_socia" style="margin: 0;">Es Socia (acceso completo)</label>
+                    </div>
+                </div>
+
+                {% if persona %}
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="activo" id="activo"
+                               {{ 'checked' if persona.activo else '' }}>
+                        <label for="activo" style="margin: 0;">Activo</label>
+                    </div>
+                </div>
+                {% endif %}
+
+                <button type="submit">{{ 'Actualizar Persona' if persona else 'Agregar Persona' }}</button>
+
+                {% if not persona %}
+                <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                    * La contraseña por defecto será: <strong>comsulting2025</strong>
+                </p>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</body>
+</html>

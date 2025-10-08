@@ -27,6 +27,17 @@ Thumbs.db
 # Backups
 *.bak
 *.backup
+*_backup.py
+*_old*.py
+app_simplified.py
+importar_datos_simplificados.py
 
 # Logs
 *.log
+
+# Flask instance folder
+instance/
+
+# Environment
+.env
+.env.local

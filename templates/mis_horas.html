@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Horas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; }
+        .summary-card h3 { font-size: 14px; margin-bottom: 10px; opacity: 0.9; }
+        .summary-card .value { font-size: 28px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        tr:hover { background: #f8f9fa; }
+        .back-link { color: #667eea; text-decoration: none; }
+        .no-data { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 AgentTracker - Mis Horas</h1>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <a href="{{ url_for('dashboard') }}" class="back-link">← Volver al Dashboard</a>
+            <h2 style="margin: 20px 0;">Mis Horas Trabajadas</h2>
+
+            <div class="summary">
+                <div class="summary-card">
+                    <h3>TOTAL HORAS</h3>
+                    <div class="value">{{ total_horas|formato_numero }}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>COSTO TOTAL</h3>
+                    <div class="value">{{ total_costo_uf|formato_numero }} UF</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 20px;">Registros</h3>
+
+            {% if registros %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Área</th>
+                        <th>Servicio</th>
+                        <th>Tarea</th>
+                        <th>Horas</th>
+                        <th>Costo (UF)</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in registros %}
+                    <tr>
+                        <td>{{ registro.fecha.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ registro.area.nombre if registro.area else '-' }}</td>
+                        <td>{{ registro.servicio.nombre if registro.servicio else '-' }}</td>
+                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ registro.tarea.nombre if registro.tarea else '-' }}">
+                            {{ registro.tarea.nombre if registro.tarea else '-' }}
+                        </td>
+                        <td>{{ registro.horas|formato_numero }}</td>
+                        <td>{{ registro.costo_uf|formato_numero }}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ registro.descripcion or '-' }}">
+                            {{ registro.descripcion or '-' }}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 5px;">
+                                <a href="{{ url_for('editar_horas', registro_id=registro.id) }}" style="background: #667eea; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px;">Editar</a>
+                                <form method="POST" action="{{ url_for('eliminar_horas', registro_id=registro.id) }}" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este registro?');">
+                                    <button type="submit" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer;">Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-data">
+                <p>No tienes horas registradas aún.</p>
+                <p style="margin-top: 10px;"><a href="{{ url_for('registrar_horas') }}" style="color: #667eea;">Registrar tus primeras horas →</a></p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
