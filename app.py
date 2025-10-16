@@ -71,14 +71,21 @@ class Persona(db.Model):
     # Información laboral
     cargo = db.Column(db.String(50))  # Socio, Director, Consultor Senior, etc.
     es_socia = db.Column(db.Boolean, default=False)  # Solo socias ven info completa
+    es_admin = db.Column(db.Boolean, default=False)  # Admin (Blanca, Macarena, Jazmín) ven TODO
     activo = db.Column(db.Boolean, default=True)
     fecha_ingreso = db.Column(db.Date)
+
+    # Jerarquía organizacional
+    reporte_a_id = db.Column(db.Integer, db.ForeignKey('personas.id'), nullable=True)
 
     # Costos (en pesos chilenos)
     costo_mensual_empresa = db.Column(db.Float, nullable=False)  # Costo total mensual empresa
 
     # Relaciones
     registros_horas = db.relationship('RegistroHora', back_populates='persona', lazy='dynamic')
+
+    # Relaciones jerárquicas
+    supervisor = db.relationship('Persona', remote_side=[id], backref='subordinados', foreign_keys=[reporte_a_id])
 
     @property
     def costo_hora_uf(self):
@@ -91,6 +98,47 @@ class Persona(db.Model):
     def verificar_password(self, password):
         """Verifica la contraseña"""
         return self.password_hash == hashlib.sha256(password.encode()).hexdigest()
+
+    def puede_ver_persona(self, otra_persona_id):
+        """
+        Determina si esta persona puede ver información de otra persona
+
+        Reglas:
+        1. Admin (es_admin=True) → Ve TODO
+        2. Socios/Directores → Solo ven a sus reportes DIRECTOS
+        3. Resto → Solo ven su propia información
+        """
+        # Admin ve todo
+        if self.es_admin:
+            return True
+
+        # Puede verse a sí mismo
+        if self.id == otra_persona_id:
+            return True
+
+        # Puede ver a sus subordinados directos
+        subordinado_ids = [s.id for s in self.subordinados]
+        if otra_persona_id in subordinado_ids:
+            return True
+
+        return False
+
+    def obtener_personas_visibles(self):
+        """
+        Retorna lista de IDs de personas que este usuario puede ver
+
+        Returns:
+            list: IDs de personas visibles para este usuario
+        """
+        if self.es_admin:
+            # Admin ve a todos
+            return [p.id for p in Persona.query.filter_by(activo=True).all()]
+
+        # Ve a sí mismo + subordinados directos
+        ids_visibles = [self.id]
+        ids_visibles.extend([s.id for s in self.subordinados if s.activo])
+
+        return ids_visibles
 
     def __repr__(self):
         return f'<Persona {self.nombre}>'
@@ -292,8 +340,24 @@ def login_required(f):
     return decorated_function
 
 
+def admin_required(f):
+    """Requiere que el usuario sea administrador (Blanca, Macarena, Jazmín)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login', next=request.url))
+
+        persona = Persona.query.get(session['user_id'])
+        if not persona or not persona.es_admin:
+            flash('Acceso denegado. Solo administradores pueden ver esta información.', 'error')
+            return redirect(url_for('dashboard'))
+
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 def socia_required(f):
-    """Requiere que el usuario sea socia"""
+    """Requiere que el usuario sea socia (mantenido por compatibilidad)"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -306,6 +370,42 @@ def socia_required(f):
 
         return f(*args, **kwargs)
     return decorated_function
+
+
+def puede_ver_persona_required(persona_id_param='persona_id'):
+    """
+    Verifica que el usuario tenga permisos para ver a otra persona
+
+    Args:
+        persona_id_param: nombre del parámetro que contiene el ID de la persona a verificar
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('login', next=request.url))
+
+            persona_actual = Persona.query.get(session['user_id'])
+            if not persona_actual:
+                flash('Usuario no encontrado', 'error')
+                return redirect(url_for('dashboard'))
+
+            # Obtener el ID de la persona que se quiere ver
+            persona_objetivo_id = kwargs.get(persona_id_param) or request.args.get(persona_id_param) or request.form.get(persona_id_param)
+
+            if persona_objetivo_id:
+                try:
+                    persona_objetivo_id = int(persona_objetivo_id)
+                    if not persona_actual.puede_ver_persona(persona_objetivo_id):
+                        flash('No tienes permisos para ver esta información', 'error')
+                        return redirect(url_for('dashboard'))
+                except ValueError:
+                    flash('ID de persona inválido', 'error')
+                    return redirect(url_for('dashboard'))
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 # ============= RUTAS DE AUTENTICACIÓN =============
@@ -323,6 +423,7 @@ def login():
             session['user_id'] = persona.id
             session['user_name'] = persona.nombre
             session['es_socia'] = persona.es_socia
+            session['es_admin'] = persona.es_admin
 
             flash(f'¡Bienvenida {persona.nombre}!', 'success')
             next_page = request.args.get('next')

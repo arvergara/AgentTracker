@@ -41,3 +41,9 @@ instance/
 # Environment
 .env
 .env.local
+
+# Data files (too large for Git)
+*.csv
+*.xlsx
+*.pdf
+Historial*.csv
