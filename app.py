@@ -7,7 +7,19 @@ import hashlib
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///comsulting_simplified.db'
+
+# Usar PostgreSQL en producción (Render) y SQLite en desarrollo
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    # Render usa PostgreSQL - DATABASE_URL viene de la variable de entorno
+    # Render usa postgres:// pero SQLAlchemy necesita postgresql://
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    # Local usa SQLite
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///comsulting_simplified.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'comsulting-secret-key-2025-muy-segura-cambiar-en-produccion')
 
