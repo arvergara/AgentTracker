@@ -1393,9 +1393,57 @@ def rentabilidad():
     # Ordenar: COMSULTING al final, resto por margen descendente
     clientes_analisis.sort(key=lambda x: (x['es_comsulting'], -x['margen']))
 
+    # ===== ANÁLISIS POR ÁREA =====
+    areas_analisis = []
+    areas = Area.query.filter_by(activo=True).all()
+
+    for area in areas:
+        # Calcular costos por área (horas trabajadas en esta área)
+        registros_area = RegistroHora.query.filter_by(area_id=area.id).filter(
+            extract('year', RegistroHora.fecha) == año
+        )
+        if mes:
+            registros_area = registros_area.filter(extract('month', RegistroHora.fecha) == mes)
+
+        registros_area = registros_area.all()
+        total_horas_area = sum(r.horas for r in registros_area)
+        total_costos_area = sum(r.costo_uf for r in registros_area)
+
+        # Calcular ingresos por área (sumando ingresos de servicios en esta área)
+        servicios_area = Servicio.query.filter_by(area_id=area.id, activo=True).all()
+        total_ingresos_area = 0
+
+        for servicio in servicios_area:
+            ingresos_servicio = IngresoMensual.query.filter_by(
+                servicio_id=servicio.id,
+                año=año
+            )
+            if mes:
+                ingresos_servicio = ingresos_servicio.filter_by(mes=mes)
+
+            total_ingresos_area += sum(i.ingreso_uf for i in ingresos_servicio.all())
+
+        # Calcular margen por área
+        margen_area = total_ingresos_area - total_costos_area
+        margen_porcentaje_area = (margen_area / total_ingresos_area * 100) if total_ingresos_area > 0 else 0
+
+        if total_ingresos_area > 0 or total_costos_area > 0:
+            areas_analisis.append({
+                'area': area,
+                'ingresos': round(total_ingresos_area, 2),
+                'horas': round(total_horas_area, 2),
+                'costos': round(total_costos_area, 2),
+                'margen': round(margen_area, 2),
+                'margen_porcentaje': round(margen_porcentaje_area, 2)
+            })
+
+    # Ordenar por margen descendente
+    areas_analisis.sort(key=lambda x: -x['margen'])
+
     return render_template('rentabilidad.html',
                           stats=stats,
                           clientes_analisis=clientes_analisis,
+                          areas_analisis=areas_analisis,
                           año=año,
                           mes=mes)
 

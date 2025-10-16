@@ -192,6 +192,84 @@
             <p>Bienvenida al sistema de gestión de Comsulting</p>
         </div>
 
+        {% if persona.es_admin %}
+        <!-- NIVEL 1 DESTACADO: Solo para admins (Blanca, Macarena, Jazmín) -->
+        <div class="socia-section">
+            <h3>🎯 Métricas Principales - Vista Administración</h3>
+            <p>Panel ejecutivo para socias directoras y administración</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card primary" style="border-left-width: 8px;">
+                <h3>⚡ CAPACIDAD</h3>
+                <div class="value" style="font-size: 36px; color: #667eea;">85%</div>
+                <div class="label">Utilización del equipo</div>
+            </div>
+
+            <div class="stat-card success" style="border-left-width: 8px;">
+                <h3>💰 RENTABILIDAD</h3>
+                <div class="value" style="font-size: 36px; color: #10b981;">{% if stats_empresa %}{{ stats_empresa.margen_porcentaje|formato_numero }}%{% else %}N/A{% endif %}</div>
+                <div class="label">Margen del mes</div>
+            </div>
+
+            <div class="stat-card warning" style="border-left-width: 8px;">
+                <h3>📋 VALORIZAR PROYECTOS</h3>
+                <div class="value" style="font-size: 28px; color: #f59e0b;">Ver</div>
+                <div class="label">Gestión de proyectos</div>
+            </div>
+        </div>
+
+        <!-- NIVEL 2: Navegación Principal -->
+        <div class="quick-actions" style="margin-top: 30px;">
+            <h3>📱 Navegación Principal</h3>
+            <div class="action-buttons">
+                <a href="{{ url_for('registrar_horas') }}" class="btn btn-primary" style="font-size: 16px;">
+                    ➕ Registrar Mis Horas
+                </a>
+                <a href="{{ url_for('mis_horas') }}" class="btn btn-primary" style="font-size: 16px;">
+                    📋 Ver Mis Horas
+                </a>
+                <a href="{{ url_for('ver_clientes') }}" class="btn btn-primary" style="font-size: 16px;">
+                    👥 Ver Clientes
+                </a>
+                <a href="{{ url_for('ver_personal') }}" class="btn btn-primary" style="font-size: 16px;">
+                    👔 Ver Personas
+                </a>
+            </div>
+        </div>
+
+        <!-- NIVEL 3: Información Secundaria -->
+        <div class="quick-actions" style="margin-top: 20px; background: #f8fafc;">
+            <h3 style="font-size: 16px; color: #64748b;">📊 Información del Mes y Año</h3>
+            <div class="stats-grid" style="margin-top: 15px;">
+                <div class="stat-card info" style="background: #f1f5f9; border-left-width: 2px;">
+                    <h3 style="font-size: 12px;">INGRESOS DEL MES</h3>
+                    <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.ingresos_mes|formato_numero }} UF{% else %}N/A{% endif %}</div>
+                    <div class="label">Mes actual</div>
+                </div>
+
+                <div class="stat-card danger" style="background: #f1f5f9; border-left-width: 2px;">
+                    <h3 style="font-size: 12px;">COSTOS DEL MES</h3>
+                    <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.costos_mes|formato_numero }} UF{% else %}N/A{% endif %}</div>
+                    <div class="label">Mes actual</div>
+                </div>
+
+                <div class="stat-card {% if stats_empresa and stats_empresa.margen_uf > 0 %}success{% else %}danger{% endif %}" style="background: #f1f5f9; border-left-width: 2px;">
+                    <h3 style="font-size: 12px;">MARGEN</h3>
+                    <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.margen_uf|formato_numero }} UF{% else %}N/A{% endif %}</div>
+                    <div class="label">{% if stats_empresa %}{{ stats_empresa.margen_porcentaje|formato_numero }}%{% else %}N/A{% endif %}</div>
+                </div>
+
+                <div class="stat-card info" style="background: #f1f5f9; border-left-width: 2px;">
+                    <h3 style="font-size: 12px;">PERSONAL ACTIVO</h3>
+                    <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.personal_activo }}{% else %}N/A{% endif %}</div>
+                    <div class="label">Personas</div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Vista para usuarios NO admin (supervisores y usuarios regulares) -->
         <div class="stats-grid">
             <div class="stat-card primary">
                 <h3>HORAS DEL MES</h3>
@@ -212,39 +290,6 @@
             </div>
         </div>
 
-        {% if stats_empresa %}
-        <div class="socia-section">
-            <h3>📊 Información Empresarial (Solo Socias)</h3>
-            <p>Tienes acceso completo a todas las estadísticas de la empresa</p>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card success">
-                <h3>INGRESOS DEL MES</h3>
-                <div class="value">{{ stats_empresa.ingresos_mes|formato_numero }} UF</div>
-                <div class="label">Mes actual</div>
-            </div>
-
-            <div class="stat-card danger">
-                <h3>COSTOS DEL MES</h3>
-                <div class="value">{{ stats_empresa.costos_mes|formato_numero }} UF</div>
-                <div class="label">Mes actual</div>
-            </div>
-
-            <div class="stat-card {% if stats_empresa.margen_uf > 0 %}success{% else %}danger{% endif %}">
-                <h3>MARGEN</h3>
-                <div class="value">{{ stats_empresa.margen_uf|formato_numero }} UF</div>
-                <div class="label">{{ stats_empresa.margen_porcentaje|formato_numero }}%</div>
-            </div>
-
-            <div class="stat-card info">
-                <h3>PERSONAL ACTIVO</h3>
-                <div class="value">{{ stats_empresa.personal_activo }}</div>
-                <div class="label">Personas</div>
-            </div>
-        </div>
-        {% endif %}
-
         <div class="quick-actions">
             <h3>Acciones Rápidas</h3>
             <div class="action-buttons">
@@ -261,18 +306,10 @@
                 <a href="{{ url_for('ver_personal') }}" class="btn btn-secondary">
                     👔 Ver Personal
                 </a>
-                <a href="{{ url_for('rentabilidad') }}" class="btn btn-secondary">
-                    📊 Rentabilidad
-                </a>
-                <a href="{{ url_for('capacidad') }}" class="btn btn-secondary">
-                    👤 Capacidad
-                </a>
-                <a href="{{ url_for('valorizacion') }}" class="btn btn-secondary">
-                    💰 Valorizar Proyecto
-                </a>
                 {% endif %}
             </div>
         </div>
+        {% endif %}
     </div>
 </body>
 </html>

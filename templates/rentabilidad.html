@@ -145,6 +145,46 @@
             </p>
             {% endif %}
         </div>
+
+        <div class="card">
+            <h2 class="section-title">🏢 Análisis por Área</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Rentabilidad de cada una de las 5 áreas de trabajo</p>
+
+            {% if areas_analisis %}
+            <table class="cliente-table">
+                <thead>
+                    <tr>
+                        <th>Área</th>
+                        <th style="text-align: right;">Ingresos (UF)</th>
+                        <th style="text-align: right;">Horas</th>
+                        <th style="text-align: right;">Costos (UF)</th>
+                        <th style="text-align: right;">Margen (UF)</th>
+                        <th style="text-align: right;">Margen %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in areas_analisis %}
+                    <tr class="cliente-row" style="border-left: 4px solid {% if item.margen > 0 %}#10b981{% elif item.margen < 0 %}#ef4444{% else %}#666{% endif %};">
+                        <td><strong>{{ item.area.nombre }}</strong></td>
+                        <td style="text-align: right;">{{ item.ingresos|formato_numero }}</td>
+                        <td style="text-align: right;">{{ item.horas|formato_numero }}</td>
+                        <td style="text-align: right;">{{ item.costos|formato_numero }}</td>
+                        <td style="text-align: right;" class="{% if item.margen > 0 %}margen-positivo{% elif item.margen < 0 %}margen-negativo{% else %}margen-cero{% endif %}">
+                            {{ item.margen|formato_numero }}
+                        </td>
+                        <td style="text-align: right;" class="{% if item.margen > 0 %}margen-positivo{% elif item.margen < 0 %}margen-negativo{% else %}margen-cero{% endif %}">
+                            {{ item.margen_porcentaje|formato_numero }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: #666; text-align: center; padding: 40px;">
+                No hay datos de rentabilidad por área para el período seleccionado.
+            </p>
+            {% endif %}
+        </div>
     </div>
 
     <script>
