@@ -647,30 +647,45 @@ def api_tareas_por_servicio(servicio_id):
 @app.route('/mis-horas')
 @login_required
 def mis_horas():
-    """Ver mis registros de horas"""
-    persona_id = session.get('user_id')
+    """Ver registros de horas según permisos jerárquicos"""
+    persona_actual = Persona.query.get(session.get('user_id'))
+
+    # Obtener IDs de personas que este usuario puede ver (respeta jerarquía)
+    ids_visibles = persona_actual.obtener_personas_visibles()
 
     # Filtros opcionales
     año = request.args.get('año', datetime.now().year, type=int)
     mes = request.args.get('mes', type=int)
+    persona_filtro = request.args.get('persona_id', type=int)
 
-    query = RegistroHora.query.filter_by(persona_id=persona_id)
+    # Query base: solo personas visibles según permisos
+    query = RegistroHora.query.filter(RegistroHora.persona_id.in_(ids_visibles))
     query = query.filter(extract('year', RegistroHora.fecha) == año)
 
     if mes:
         query = query.filter(extract('month', RegistroHora.fecha) == mes)
+
+    # Filtro adicional por persona (si se selecciona)
+    if persona_filtro and persona_filtro in ids_visibles:
+        query = query.filter_by(persona_id=persona_filtro)
 
     registros = query.order_by(RegistroHora.fecha.desc()).all()
 
     total_horas = sum(r.horas for r in registros)
     total_costo_uf = sum(r.costo_uf for r in registros)
 
+    # Lista de personas visibles para el filtro
+    personas_visibles = Persona.query.filter(Persona.id.in_(ids_visibles)).order_by(Persona.nombre).all()
+
     return render_template('mis_horas.html',
                           registros=registros,
                           total_horas=round(total_horas, 2),
                           total_costo_uf=round(total_costo_uf, 2),
                           año=año,
-                          mes=mes)
+                          mes=mes,
+                          persona_filtro=persona_filtro,
+                          personas_visibles=personas_visibles,
+                          es_admin=persona_actual.es_admin)
 
 
 @app.route('/horas/<int:registro_id>/editar', methods=['GET', 'POST'])
