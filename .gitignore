@@ -47,3 +47,5 @@ instance/
 *.xlsx
 *.pdf
 Historial*.csv
+datos_historicos.json
+exportar_datos_*.json
