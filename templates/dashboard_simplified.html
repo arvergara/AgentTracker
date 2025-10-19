@@ -238,28 +238,64 @@
             </div>
         </div>
 
+        <!-- NIVEL 2.5: Rentabilidad por Cliente y Área -->
+        <div class="quick-actions" style="margin-top: 30px;">
+            <h3 style="font-size: 18px; color: #333;">💰 Top 5 Clientes Más Rentables (2025)</h3>
+            <div id="top-clientes-container" style="margin-top: 15px;">
+                <div style="text-align: center; padding: 20px; color: #94a3b8;">
+                    Cargando datos...
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions" style="margin-top: 20px;">
+            <h3 style="font-size: 18px; color: #333;">📊 Rentabilidad por Área de Comsulting (2025)</h3>
+            <div id="rentabilidad-areas-container" style="margin-top: 15px;">
+                <div style="text-align: center; padding: 20px; color: #94a3b8;">
+                    Cargando datos...
+                </div>
+            </div>
+        </div>
+
         <!-- NIVEL 3: Información Secundaria -->
         <div class="quick-actions" style="margin-top: 20px; background: #f8fafc;">
             <h3 style="font-size: 16px; color: #64748b;">📊 Información del Mes y Año</h3>
             <div class="stats-grid" style="margin-top: 15px;">
+                <!-- Ingresos -->
                 <div class="stat-card info" style="background: #f1f5f9; border-left-width: 2px;">
-                    <h3 style="font-size: 12px;">INGRESOS DEL MES</h3>
+                    <h3 style="font-size: 12px;">INGRESOS</h3>
                     <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.ingresos_mes|formato_numero }} UF{% else %}N/A{% endif %}</div>
                     <div class="label">Mes actual</div>
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #475569;">
+                        <strong>Año:</strong> {% if stats_empresa %}{{ stats_empresa.ingresos_año|formato_numero }} UF{% else %}N/A{% endif %}
+                    </div>
                 </div>
 
+                <!-- Costos -->
                 <div class="stat-card danger" style="background: #f1f5f9; border-left-width: 2px;">
-                    <h3 style="font-size: 12px;">COSTOS DEL MES</h3>
+                    <h3 style="font-size: 12px;">COSTOS</h3>
                     <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.costos_mes|formato_numero }} UF{% else %}N/A{% endif %}</div>
                     <div class="label">Mes actual</div>
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #475569;">
+                        <strong>Año:</strong> {% if stats_empresa %}{{ stats_empresa.costos_año|formato_numero }} UF{% else %}N/A{% endif %}
+                    </div>
                 </div>
 
+                <!-- Margen Mes -->
                 <div class="stat-card {% if stats_empresa and stats_empresa.margen_uf > 0 %}success{% else %}danger{% endif %}" style="background: #f1f5f9; border-left-width: 2px;">
-                    <h3 style="font-size: 12px;">MARGEN</h3>
+                    <h3 style="font-size: 12px;">MARGEN MES</h3>
                     <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.margen_uf|formato_numero }} UF{% else %}N/A{% endif %}</div>
                     <div class="label">{% if stats_empresa %}{{ stats_empresa.margen_porcentaje|formato_numero }}%{% else %}N/A{% endif %}</div>
                 </div>
 
+                <!-- Margen Año -->
+                <div class="stat-card {% if stats_empresa and stats_empresa.margen_año_uf > 0 %}success{% else %}danger{% endif %}" style="background: #f1f5f9; border-left-width: 2px;">
+                    <h3 style="font-size: 12px;">MARGEN AÑO</h3>
+                    <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.margen_año_uf|formato_numero }} UF{% else %}N/A{% endif %}</div>
+                    <div class="label">{% if stats_empresa %}{{ stats_empresa.margen_año_porcentaje|formato_numero }}%{% else %}N/A{% endif %}</div>
+                </div>
+
+                <!-- Personal Activo -->
                 <div class="stat-card info" style="background: #f1f5f9; border-left-width: 2px;">
                     <h3 style="font-size: 12px;">PERSONAL ACTIVO</h3>
                     <div class="value" style="font-size: 24px;">{% if stats_empresa %}{{ stats_empresa.personal_activo }}{% else %}N/A{% endif %}</div>
@@ -311,5 +347,133 @@
         </div>
         {% endif %}
     </div>
+
+    <script>
+        // Cargar top clientes rentables
+        async function cargarTopClientes() {
+            try {
+                const response = await fetch('/api/top-clientes-rentables?año=2025&top=5');
+                const data = await response.json();
+
+                console.log('Top clientes data:', data);
+
+                const container = document.getElementById('top-clientes-container');
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f59e0b; background: #fef3c7; border-radius: 8px;">📊 No hay datos de clientes para 2025. Asegúrate de tener ingresos registrados en la base de datos.</div>';
+                    return;
+                }
+
+                let html = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; color: #64748b;">#</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; color: #64748b;">Cliente</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Ingresos (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Costos (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Utilidad (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Margen (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach((cliente, index) => {
+                    const utilidadColor = cliente.utilidad_neta_uf > 0 ? '#10b981' : '#ef4444';
+                    const margenColor = cliente.margen > 0 ? '#10b981' : '#ef4444';
+
+                    html += `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 12px; font-size: 14px;">${index + 1}</td>
+                            <td style="padding: 12px; font-size: 14px; font-weight: 600;">${cliente.cliente}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px;">${formatNumber(cliente.ingresos_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px;">${formatNumber(cliente.costos_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: ${utilidadColor};">${formatNumber(cliente.utilidad_neta_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: ${margenColor};">${formatNumber(cliente.margen)}%</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando top clientes:', error);
+                document.getElementById('top-clientes-container').innerHTML =
+                    '<div style="text-align: center; padding: 20px; color: #ef4444;">Error al cargar datos</div>';
+            }
+        }
+
+        // Cargar rentabilidad por áreas
+        async function cargarRentabilidadAreas() {
+            try {
+                const response = await fetch('/api/rentabilidad-por-area?año=2025');
+                const data = await response.json();
+
+                console.log('Rentabilidad por área data:', data);
+
+                const container = document.getElementById('rentabilidad-areas-container');
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f59e0b; background: #fef3c7; border-radius: 8px;">📊 No hay datos de áreas para 2025. Asegúrate de tener horas e ingresos registrados.</div>';
+                    return;
+                }
+
+                let html = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; color: #64748b;">Área</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Ingresos (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Costos (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Utilidad (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Margen (%)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Horas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach(area => {
+                    const utilidadColor = area.utilidad_uf > 0 ? '#10b981' : '#ef4444';
+                    const margenColor = area.margen > 0 ? '#10b981' : '#ef4444';
+
+                    html += `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 12px; font-size: 14px; font-weight: 600;">${area.area}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px;">${formatNumber(area.ingresos_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px;">${formatNumber(area.costos_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: ${utilidadColor};">${formatNumber(area.utilidad_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: ${margenColor};">${formatNumber(area.margen)}%</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; color: #64748b;">${formatNumber(area.horas)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando rentabilidad por áreas:', error);
+                document.getElementById('rentabilidad-areas-container').innerHTML =
+                    '<div style="text-align: center; padding: 20px; color: #ef4444;">Error al cargar datos</div>';
+            }
+        }
+
+        // Función auxiliar para formatear números
+        function formatNumber(num) {
+            return new Intl.NumberFormat('es-CL', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+            }).format(num);
+        }
+
+        // Cargar datos al iniciar la página (solo para admin)
+        {% if persona.es_admin %}
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarTopClientes();
+            cargarRentabilidadAreas();
+        });
+        {% endif %}
+    </script>
 </body>
 </html>

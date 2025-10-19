@@ -532,10 +532,15 @@ def dashboard():
     # Si es socia, mostrar información completa
     stats_empresa = None
     if es_socia:
-        # Ingresos totales del mes
+        # Ingresos totales del mes actual
         ingresos_mes = db.session.query(func.sum(IngresoMensual.ingreso_uf)).filter(
             IngresoMensual.año == año_actual,
             IngresoMensual.mes == mes_actual
+        ).scalar() or 0
+
+        # Ingresos totales del año
+        ingresos_año = db.session.query(func.sum(IngresoMensual.ingreso_uf)).filter(
+            IngresoMensual.año == año_actual
         ).scalar() or 0
 
         # Costos totales del mes (todas las personas activas)
@@ -543,15 +548,26 @@ def dashboard():
         costo_mensual_total_pesos = sum(p.costo_mensual_empresa for p in personas_activas)
         costo_mensual_total_uf = costo_mensual_total_pesos / VALOR_UF_ACTUAL
 
-        # Margen
-        margen_uf = ingresos_mes - costo_mensual_total_uf
-        margen_porcentaje = (margen_uf / ingresos_mes * 100) if ingresos_mes > 0 else 0
+        # Costos del año (costo mensual × meses transcurridos)
+        costo_año_uf = costo_mensual_total_uf * mes_actual
+
+        # Margen del mes
+        margen_mes_uf = ingresos_mes - costo_mensual_total_uf
+        margen_mes_porcentaje = (margen_mes_uf / ingresos_mes * 100) if ingresos_mes > 0 else 0
+
+        # Margen del año
+        margen_año_uf = ingresos_año - costo_año_uf
+        margen_año_porcentaje = (margen_año_uf / ingresos_año * 100) if ingresos_año > 0 else 0
 
         stats_empresa = {
             'ingresos_mes': round(ingresos_mes, 2),
+            'ingresos_año': round(ingresos_año, 2),
             'costos_mes': round(costo_mensual_total_uf, 2),
-            'margen_uf': round(margen_uf, 2),
-            'margen_porcentaje': round(margen_porcentaje, 2),
+            'costos_año': round(costo_año_uf, 2),
+            'margen_uf': round(margen_mes_uf, 2),
+            'margen_porcentaje': round(margen_mes_porcentaje, 2),
+            'margen_año_uf': round(margen_año_uf, 2),
+            'margen_año_porcentaje': round(margen_año_porcentaje, 2),
             'personal_activo': len(personas_activas)
         }
 
@@ -777,11 +793,16 @@ def eliminar_horas(registro_id):
 @socia_required
 def ver_clientes():
     """Ver todos los clientes (solo socias)"""
+    # Año y mes actual
+    hoy = date.today()
+    año_actual = hoy.year
+    mes_actual = hoy.month
+
     # Separar clientes permanentes y SPOT
     clientes_permanentes = Cliente.query.filter_by(tipo='permanente', activo=True).order_by(Cliente.nombre).all()
     clientes_spot = Cliente.query.filter_by(tipo='spot', activo=True).order_by(Cliente.nombre).all()
 
-    # Calcular ingresos para clientes permanentes (mensual)
+    # Calcular ingresos para clientes permanentes (promedio mensual del año)
     permanentes_data = []
     total_mensual_permanentes = 0
 
@@ -789,7 +810,20 @@ def ver_clientes():
         if cliente.nombre == 'CLIENTES PERMANENTES':
             continue
         servicios = cliente.servicios.filter_by(activo=True).all()
-        ingreso_mensual = sum(s.valor_mensual_uf for s in servicios)
+
+        # Calcular ingreso mensual promedio basado en IngresoMensual del año actual
+        ingreso_mensual = 0
+        for servicio in servicios:
+            # Promedio de ingresos del año actual
+            ingresos_año = IngresoMensual.query.filter_by(
+                servicio_id=servicio.id,
+                año=año_actual
+            ).all()
+
+            if ingresos_año:
+                promedio_servicio = sum(i.ingreso_uf for i in ingresos_año) / len(ingresos_año)
+                ingreso_mensual += promedio_servicio
+
         total_mensual_permanentes += ingreso_mensual
 
         permanentes_data.append({
@@ -799,13 +833,22 @@ def ver_clientes():
             'num_servicios': len(servicios)
         })
 
-    # Calcular ingresos para clientes SPOT (anual)
+    # Calcular ingresos para clientes SPOT (suma total del año)
     spot_data = []
     total_anual_spot = 0
 
     for cliente in clientes_spot:
         servicios = cliente.servicios.filter_by(activo=True).all()
-        ingreso_anual = sum(s.valor_mensual_uf * 12 for s in servicios)  # Anualizado
+
+        # Sumar todos los ingresos del año para servicios spot
+        ingreso_anual = 0
+        for servicio in servicios:
+            ingresos_año = db.session.query(func.sum(IngresoMensual.ingreso_uf)).filter(
+                IngresoMensual.servicio_id == servicio.id,
+                IngresoMensual.año == año_actual
+            ).scalar() or 0
+            ingreso_anual += ingresos_año
+
         total_anual_spot += ingreso_anual
 
         spot_data.append({
@@ -1645,6 +1688,179 @@ def guardar_valorizacion():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 400
+
+
+# ============= API ENDPOINTS PARA DASHBOARD =============
+
+@app.route('/api/rentabilidad-por-area')
+@login_required
+def api_rentabilidad_por_area():
+    """API: Rentabilidad por área (solo para socias/admin)"""
+    es_socia = session.get('es_socia', False)
+    es_admin = session.get('es_admin', False)
+
+    if not (es_socia or es_admin):
+        return jsonify({'error': 'No autorizado'}), 403
+
+    año = request.args.get('año', datetime.now().year, type=int)
+    mes = request.args.get('mes', type=int)
+
+    areas_rentabilidad = []
+    areas = Area.query.filter_by(activo=True).all()
+
+    for area in areas:
+        # Calcular costos (horas trabajadas en esta área)
+        query_horas = RegistroHora.query.filter_by(area_id=area.id).filter(
+            extract('year', RegistroHora.fecha) == año
+        )
+        if mes:
+            query_horas = query_horas.filter(extract('month', RegistroHora.fecha) == mes)
+
+        registros_horas = query_horas.all()
+        total_horas = sum(r.horas for r in registros_horas)
+        total_costos = sum(r.costo_uf for r in registros_horas)
+
+        # Calcular ingresos (sumando todos los ingresos de servicios en esta área)
+        # Necesitamos obtener todos los servicios de esta área y sus ingresos
+        total_ingresos = 0
+        servicios_area = Servicio.query.filter_by(area_id=area.id, activo=True).all()
+
+        for servicio in servicios_area:
+            # Obtener registros de horas de este servicio para saber qué clientes están asociados
+            registros_servicio = RegistroHora.query.filter_by(servicio_id=servicio.id).filter(
+                extract('year', RegistroHora.fecha) == año
+            )
+            if mes:
+                registros_servicio = registros_servicio.filter(extract('month', RegistroHora.fecha) == mes)
+
+            # Por ahora, vamos a calcular ingresos de forma proporcional
+            # basándonos en las horas trabajadas en cada cliente para esta área
+
+        # Alternativa: calcular ingresos por cliente que tiene horas en esta área
+        clientes_en_area = db.session.query(RegistroHora.cliente_id).filter(
+            RegistroHora.area_id == area.id,
+            extract('year', RegistroHora.fecha) == año
+        )
+        if mes:
+            clientes_en_area = clientes_en_area.filter(extract('month', RegistroHora.fecha) == mes)
+
+        clientes_ids = [c[0] for c in clientes_en_area.distinct().all()]
+
+        # Sumar ingresos de esos clientes de forma proporcional
+        for cliente_id in clientes_ids:
+            # Ingresos totales del cliente
+            ingresos_cliente_query = IngresoMensual.query.join(ServicioCliente).filter(
+                ServicioCliente.cliente_id == cliente_id,
+                IngresoMensual.año == año
+            )
+            if mes:
+                ingresos_cliente_query = ingresos_cliente_query.filter(IngresoMensual.mes == mes)
+
+            ingresos_cliente_total = sum(i.ingreso_uf for i in ingresos_cliente_query.all())
+
+            # Horas totales del cliente
+            horas_cliente_total_query = RegistroHora.query.filter_by(cliente_id=cliente_id).filter(
+                extract('year', RegistroHora.fecha) == año
+            )
+            if mes:
+                horas_cliente_total_query = horas_cliente_total_query.filter(extract('month', RegistroHora.fecha) == mes)
+
+            horas_cliente_total = sum(r.horas for r in horas_cliente_total_query.all())
+
+            # Horas del cliente en esta área
+            horas_cliente_area_query = RegistroHora.query.filter_by(cliente_id=cliente_id, area_id=area.id).filter(
+                extract('year', RegistroHora.fecha) == año
+            )
+            if mes:
+                horas_cliente_area_query = horas_cliente_area_query.filter(extract('month', RegistroHora.fecha) == mes)
+
+            horas_cliente_area = sum(r.horas for r in horas_cliente_area_query.all())
+
+            # Prorratear ingresos
+            if horas_cliente_total > 0:
+                proporcion = horas_cliente_area / horas_cliente_total
+                total_ingresos += ingresos_cliente_total * proporcion
+
+        # Calcular margen
+        utilidad = total_ingresos - total_costos
+        margen_porcentaje = (utilidad / total_ingresos * 100) if total_ingresos > 0 else 0
+
+        if total_ingresos > 0 or total_costos > 0:
+            areas_rentabilidad.append({
+                'area': area.nombre,
+                'ingresos_uf': round(total_ingresos, 1),
+                'costos_uf': round(total_costos, 1),
+                'utilidad_uf': round(utilidad, 1),
+                'margen': round(margen_porcentaje, 1),
+                'horas': round(total_horas, 1)
+            })
+
+    # Ordenar por margen descendente
+    areas_rentabilidad.sort(key=lambda x: x['margen'], reverse=True)
+
+    # Debug logging
+    print(f"[DEBUG] Rentabilidad áreas - Total áreas: {len(areas)}, Con datos: {len(areas_rentabilidad)}")
+    print(f"[DEBUG] Áreas rentabilidad: {areas_rentabilidad}")
+
+    return jsonify(areas_rentabilidad)
+
+
+@app.route('/api/top-clientes-rentables')
+@login_required
+def api_top_clientes_rentables():
+    """API: Top clientes más rentables (solo para socias/admin)"""
+    es_socia = session.get('es_socia', False)
+    es_admin = session.get('es_admin', False)
+
+    if not (es_socia or es_admin):
+        return jsonify({'error': 'No autorizado'}), 403
+
+    año = request.args.get('año', datetime.now().year, type=int)
+    top = request.args.get('top', 5, type=int)
+
+    clientes_analisis = []
+    clientes = Cliente.query.filter_by(activo=True).all()
+
+    for cliente in clientes:
+        if cliente.nombre in ['CLIENTES PERMANENTES', 'COMSULTING']:
+            continue
+
+        # Calcular ingresos del cliente
+        ingresos_cliente_query = IngresoMensual.query.join(ServicioCliente).filter(
+            ServicioCliente.cliente_id == cliente.id,
+            IngresoMensual.año == año
+        )
+        ingresos_cliente = ingresos_cliente_query.all()
+        total_ingresos = sum(i.ingreso_uf for i in ingresos_cliente)
+
+        # Calcular costos (horas trabajadas en este cliente)
+        registros_horas = RegistroHora.query.filter_by(cliente_id=cliente.id).filter(
+            extract('year', RegistroHora.fecha) == año
+        ).all()
+        total_costos = sum(r.costo_uf for r in registros_horas)
+
+        # Calcular margen
+        utilidad_neta = total_ingresos - total_costos
+        margen_porcentaje = (utilidad_neta / total_ingresos * 100) if total_ingresos > 0 else 0
+
+        if total_ingresos > 0:
+            clientes_analisis.append({
+                'cliente': cliente.nombre,
+                'ingresos_uf': round(total_ingresos, 1),
+                'costos_uf': round(total_costos, 1),
+                'utilidad_neta_uf': round(utilidad_neta, 1),
+                'margen': round(margen_porcentaje, 1)
+            })
+
+    # Ordenar por utilidad neta descendente
+    clientes_analisis.sort(key=lambda x: x['utilidad_neta_uf'], reverse=True)
+
+    # Debug logging
+    print(f"[DEBUG] Top clientes - Total clientes analizados: {len(clientes)}, Con ingresos: {len(clientes_analisis)}")
+    print(f"[DEBUG] Top {top} clientes: {clientes_analisis[:top]}")
+
+    # Retornar solo el top
+    return jsonify(clientes_analisis[:top])
 
 
 # ============= INICIALIZACIÓN =============
