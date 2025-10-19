@@ -180,6 +180,9 @@
     <div class="navbar">
         <h1>🎯 AgentTracker</h1>
         <div class="user-info">
+            <a href="{{ url_for('dashboard') }}" style="margin-right: 15px;">📊 Dashboard</a>
+            <a href="{{ url_for('valorizacion') }}" style="margin-right: 15px;">💰 Valorización</a>
+            <a href="{{ url_for('registrar_horas') }}" style="margin-right: 15px;">⏱️ Horas</a>
             <span>👤 {{ persona.nombre }}{% if persona.es_socia %} (Socia){% endif %}</span>
             <a href="{{ url_for('cambiar_password') }}">Cambiar Contraseña</a>
             <a href="{{ url_for('logout') }}">Salir</a>
