@@ -1506,7 +1506,7 @@ def rentabilidad():
 # ============= VALORIZACIÓN DE PROYECTOS =============
 
 @app.route('/valorizacion')
-@socia_required
+@login_required
 def valorizacion():
     """Calculadora de valorización de proyectos y licitaciones"""
     personas = Persona.query.filter_by(activo=True).all()
@@ -1549,7 +1549,7 @@ def valorizacion():
 
 
 @app.route('/api/calcular-valorizacion', methods=['POST'])
-@socia_required
+@login_required
 def calcular_valorizacion():
     """API para calcular valorización de un proyecto"""
     data = request.get_json()
@@ -1605,7 +1605,7 @@ def calcular_valorizacion():
 
 
 @app.route('/api/guardar-valorizacion', methods=['POST'])
-@socia_required
+@login_required
 def guardar_valorizacion():
     """Guarda una valorización y opcionalmente crea cliente/servicio"""
     persona_id = session.get('user_id')
