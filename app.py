@@ -798,22 +798,27 @@ def ver_clientes():
     año_actual = hoy.year
     mes_actual = hoy.month
 
-    # Separar clientes permanentes y SPOT
-    clientes_permanentes = Cliente.query.filter_by(tipo='permanente', activo=True).order_by(Cliente.nombre).all()
-    clientes_spot = Cliente.query.filter_by(tipo='spot', activo=True).order_by(Cliente.nombre).all()
+    # CORRECCIÓN: Obtener TODOS los clientes activos y separar por es_spot de SERVICIOS
+    # (no por tipo de cliente, ya que un cliente puede tener servicios permanentes y spot)
+    todos_clientes = Cliente.query.filter_by(activo=True).order_by(Cliente.nombre).all()
 
-    # Calcular ingresos para clientes permanentes (promedio mensual del año)
+    # Calcular ingresos para servicios permanentes (promedio mensual del año)
     permanentes_data = []
     total_mensual_permanentes = 0
 
-    for cliente in clientes_permanentes:
+    for cliente in todos_clientes:
         if cliente.nombre == 'CLIENTES PERMANENTES':
             continue
-        servicios = cliente.servicios.filter_by(activo=True).all()
+
+        # Filtrar solo servicios PERMANENTES (es_spot=False)
+        servicios_permanentes = cliente.servicios.filter_by(activo=True, es_spot=False).all()
+
+        if not servicios_permanentes:
+            continue  # Este cliente no tiene servicios permanentes
 
         # Calcular ingreso mensual promedio basado en IngresoMensual del año actual
         ingreso_mensual = 0
-        for servicio in servicios:
+        for servicio in servicios_permanentes:
             # Promedio de ingresos del año actual
             ingresos_año = IngresoMensual.query.filter_by(
                 servicio_id=servicio.id,
@@ -828,21 +833,25 @@ def ver_clientes():
 
         permanentes_data.append({
             'cliente': cliente,
-            'servicios': servicios,
+            'servicios': servicios_permanentes,
             'ingreso_mensual': round(ingreso_mensual, 2),
-            'num_servicios': len(servicios)
+            'num_servicios': len(servicios_permanentes)
         })
 
-    # Calcular ingresos para clientes SPOT (suma total del año)
+    # Calcular ingresos para servicios SPOT (suma total del año)
     spot_data = []
     total_anual_spot = 0
 
-    for cliente in clientes_spot:
-        servicios = cliente.servicios.filter_by(activo=True).all()
+    for cliente in todos_clientes:
+        # Filtrar solo servicios SPOT (es_spot=True)
+        servicios_spot = cliente.servicios.filter_by(activo=True, es_spot=True).all()
+
+        if not servicios_spot:
+            continue  # Este cliente no tiene servicios spot
 
         # Sumar todos los ingresos del año para servicios spot
         ingreso_anual = 0
-        for servicio in servicios:
+        for servicio in servicios_spot:
             ingresos_año = db.session.query(func.sum(IngresoMensual.ingreso_uf)).filter(
                 IngresoMensual.servicio_id == servicio.id,
                 IngresoMensual.año == año_actual
@@ -853,9 +862,9 @@ def ver_clientes():
 
         spot_data.append({
             'cliente': cliente,
-            'servicios': servicios,
+            'servicios': servicios_spot,
             'ingreso_anual': round(ingreso_anual, 2),
-            'num_servicios': len(servicios)
+            'num_servicios': len(servicios_spot)
         })
 
     return render_template('clientes.html',
