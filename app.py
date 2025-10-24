@@ -1038,18 +1038,22 @@ def ver_clientes():
         if not servicios_permanentes:
             continue  # Este cliente no tiene servicios permanentes
 
-        # Calcular ingreso mensual promedio basado en IngresoMensual del año actual
+        # Calcular ingreso mensual ACTUAL (mes en curso) basado en IngresoMensual
         ingreso_mensual = 0
         for servicio in servicios_permanentes:
-            # Promedio de ingresos del año actual
-            ingresos_año = IngresoMensual.query.filter_by(
+            # Obtener ingreso del mes actual
+            ingreso_mes_actual = IngresoMensual.query.filter_by(
                 servicio_id=servicio.id,
-                año=año_actual
-            ).all()
+                año=año_actual,
+                mes=mes_actual
+            ).first()
 
-            if ingresos_año:
-                promedio_servicio = sum(i.ingreso_uf for i in ingresos_año) / len(ingresos_año)
-                ingreso_mensual += promedio_servicio
+            if ingreso_mes_actual:
+                ingreso_mensual += ingreso_mes_actual.ingreso_uf
+            else:
+                # Si no hay ingreso registrado para este mes, usar el valor del servicio
+                if servicio.valor_mensual_uf:
+                    ingreso_mensual += servicio.valor_mensual_uf
 
         total_mensual_permanentes += ingreso_mensual
 
