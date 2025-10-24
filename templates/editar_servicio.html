@@ -45,9 +45,11 @@
             <h2 style="margin: 20px 0;">Editar Servicio: {{ servicio.nombre }}</h2>
 
             <div class="warning-box">
-                <p><strong>⚠️ Atención:</strong></p>
-                <p>• Si cambias el <strong>valor en UF</strong> de un servicio permanente, se actualizarán automáticamente todos los ingresos mensuales futuros (desde el mes actual en adelante)</p>
+                <p><strong>⚠️ Atención - Sistema de Seguimiento Histórico:</strong></p>
+                <p>• Si cambias el <strong>valor en UF</strong>, se guardará un registro histórico del cambio con fecha, valores anterior/nuevo y motivo</p>
+                <p>• Para servicios permanentes: se actualizarán automáticamente los ingresos mensuales futuros (desde el mes actual en adelante)</p>
                 <p>• Los meses anteriores conservarán su valor original para mantener el histórico correcto</p>
+                <p>• La proyección anual se ajustará automáticamente considerando todos los cambios históricos del año</p>
                 <p>• Para servicios SPOT, los cambios no afectan automáticamente los ingresos registrados</p>
             </div>
 
@@ -61,6 +63,12 @@
                     <label for="valor_mensual_uf">Valor en UF</label>
                     <input type="number" id="valor_mensual_uf" name="valor_mensual_uf" step="0.01" min="0" value="{{ servicio.valor_mensual_uf }}" required>
                     <small style="color: #666; font-size: 13px;">Para servicios permanentes: valor mensual. Para SPOT: valor promedio mensual estimado.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="motivo_cambio">Motivo del Cambio (opcional)</label>
+                    <input type="text" id="motivo_cambio" name="motivo_cambio" placeholder="Ej: Ajuste por inflación, Renegociación, Ampliación del servicio...">
+                    <small style="color: #666; font-size: 13px;">Si cambias el valor del servicio, se guardará un registro histórico con este motivo.</small>
                 </div>
 
                 <div class="form-group checkbox-group">

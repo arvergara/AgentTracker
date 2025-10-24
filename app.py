@@ -69,6 +69,58 @@ def calcular_horas_disponibles_mes(año, mes):
 
     return horas_totales
 
+
+def proyeccion_anual_servicio_ajustada(servicio, año):
+    """
+    Calcula la proyección anual de un servicio considerando cambios históricos.
+
+    Si el servicio tuvo cambios de valor durante el año, la proyección se ajusta:
+    - Ene-Sep con valor 100 UF = 900 UF
+    - Oct-Dic con valor 200 UF = 600 UF
+    - Proyección total = 1,500 UF (no 100×12 = 1,200 UF)
+
+    Args:
+        servicio: Objeto ServicioCliente
+        año: Año para calcular la proyección
+
+    Returns:
+        float: Proyección anual ajustada en UF
+    """
+    from sqlalchemy import extract
+
+    # Obtener cambios históricos del año ordenados por fecha
+    cambios = HistoricoServicio.query.filter_by(
+        servicio_cliente_id=servicio.id
+    ).filter(
+        extract('year', HistoricoServicio.fecha_cambio) == año
+    ).order_by(HistoricoServicio.fecha_cambio).all()
+
+    if not cambios:
+        # No hay cambios, usar valor actual × 12 meses
+        return servicio.valor_mensual_uf * 12
+
+    proyeccion = 0
+    mes_inicio = 1
+    valor_actual = cambios[0].valor_anterior_uf  # Comenzar con el primer valor del año
+
+    for cambio in cambios:
+        mes_cambio = cambio.fecha_cambio.month
+
+        # Proyectar con valor anterior hasta el mes del cambio
+        meses_con_valor_anterior = mes_cambio - mes_inicio
+        proyeccion += valor_actual * meses_con_valor_anterior
+
+        # Actualizar para siguiente iteración
+        mes_inicio = mes_cambio
+        valor_actual = cambio.valor_nuevo_uf
+
+    # Proyectar resto del año con valor actual
+    meses_restantes = 13 - mes_inicio  # 13 porque queremos de mes_inicio hasta diciembre inclusive
+    proyeccion += valor_actual * meses_restantes
+
+    return proyeccion
+
+
 # ============= MODELOS SIMPLIFICADOS =============
 
 class Persona(db.Model):
@@ -267,6 +319,30 @@ class IngresoMensual(db.Model):
 
     def __repr__(self):
         return f'<IngresoMensual {self.año}-{self.mes:02d} - {self.ingreso_uf} UF>'
+
+
+class HistoricoServicio(db.Model):
+    """Histórico de cambios en el valor de los servicios"""
+    __tablename__ = 'historico_servicios'
+
+    id = db.Column(db.Integer, primary_key=True)
+    servicio_cliente_id = db.Column(db.Integer, db.ForeignKey('servicios_cliente.id'), nullable=False)
+
+    valor_anterior_uf = db.Column(db.Float, nullable=False)
+    valor_nuevo_uf = db.Column(db.Float, nullable=False)
+    fecha_cambio = db.Column(db.Date, nullable=False)
+
+    usuario_id = db.Column(db.Integer, db.ForeignKey('personas.id'))
+    motivo = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    # Relaciones
+    servicio = db.relationship('ServicioCliente', backref='historico_cambios')
+    usuario = db.relationship('Persona')
+
+    def __repr__(self):
+        return f'<HistoricoServicio {self.servicio_cliente_id}: {self.valor_anterior_uf} → {self.valor_nuevo_uf} UF>'
 
 
 class RegistroHora(db.Model):
@@ -1201,15 +1277,36 @@ def editar_servicio(servicio_id):
             if fecha_fin_str:
                 servicio.fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
 
-        # Si cambió el valor y no es SPOT, actualizar ingresos mensuales
-        if nuevo_valor != servicio.valor_mensual_uf and not servicio.es_spot:
-            servicio.valor_mensual_uf = nuevo_valor
-            # Actualizar ingresos mensuales existentes
-            IngresoMensual.query.filter_by(servicio_id=servicio.id).update(
-                {'ingreso_uf': nuevo_valor}
+        # ===== REGISTRAR CAMBIO EN HISTÓRICO =====
+        # Si el valor cambió, registrar en histórico antes de actualizar
+        if nuevo_valor != servicio.valor_mensual_uf:
+            valor_anterior = servicio.valor_mensual_uf
+            motivo = request.form.get('motivo_cambio', '')
+
+            # Crear registro histórico
+            historico = HistoricoServicio(
+                servicio_cliente_id=servicio.id,
+                valor_anterior_uf=valor_anterior,
+                valor_nuevo_uf=nuevo_valor,
+                fecha_cambio=datetime.now().date(),
+                usuario_id=session.get('user_id'),
+                motivo=motivo if motivo else f'Cambio de {valor_anterior} UF a {nuevo_valor} UF'
             )
-        else:
-            servicio.valor_mensual_uf = nuevo_valor
+            db.session.add(historico)
+
+            # Si cambió el valor y no es SPOT, actualizar ingresos mensuales futuros
+            # (solo desde el mes actual en adelante)
+            if not servicio.es_spot:
+                hoy = datetime.now()
+                # Actualizar ingresos desde este mes en adelante
+                IngresoMensual.query.filter(
+                    IngresoMensual.servicio_id == servicio.id,
+                    IngresoMensual.año >= hoy.year,
+                    IngresoMensual.mes >= hoy.month
+                ).update({'ingreso_uf': nuevo_valor})
+
+        # Actualizar valor del servicio
+        servicio.valor_mensual_uf = nuevo_valor
 
         db.session.commit()
         flash(f'Servicio actualizado exitosamente', 'success')
@@ -1508,6 +1605,99 @@ def rentabilidad():
                           stats=stats,
                           clientes_analisis=clientes_analisis,
                           areas_analisis=areas_analisis,
+                          año=año,
+                          mes=mes)
+
+
+# ============= PRODUCTIVIDAD POR PERSONA =============
+
+def calcular_horas_disponibles_7h(año, mes):
+    """
+    Calcula las horas disponibles en un mes según días hábiles
+    Asume 7 horas/día para todos los días hábiles (L-V)
+    """
+    import calendar
+    from datetime import date
+
+    # Obtener todos los días del mes
+    _, ultimo_dia = calendar.monthrange(año, mes)
+
+    horas_totales = 0
+    for dia in range(1, ultimo_dia + 1):
+        fecha = date(año, mes, dia)
+        dia_semana = fecha.weekday()  # 0=Lunes, 6=Domingo
+
+        if dia_semana < 5:  # Lunes a Viernes (0-4)
+            horas_totales += 7
+
+    return horas_totales
+
+
+@app.route('/productividad/personas')
+@socia_required
+def productividad_personas():
+    """Panel de productividad por persona (% tiempo asignado vs disponible)"""
+    año = request.args.get('año', datetime.now().year, type=int)
+    mes = request.args.get('mes', datetime.now().month, type=int)
+
+    # Calcular horas disponibles en el mes (7h/día)
+    horas_disponibles_mes = calcular_horas_disponibles_7h(año, mes)
+
+    # Obtener todas las personas activas
+    personas_activas = Persona.query.filter_by(activo=True).order_by(Persona.nombre).all()
+
+    productividad_data = []
+
+    for persona in personas_activas:
+        # Calcular horas asignadas (registradas en el mes)
+        horas_asignadas = db.session.query(func.sum(RegistroHora.horas)).filter(
+            RegistroHora.persona_id == persona.id,
+            extract('year', RegistroHora.fecha) == año,
+            extract('month', RegistroHora.fecha) == mes
+        ).scalar() or 0
+
+        # Calcular porcentaje de ocupación
+        porcentaje_ocupacion = (horas_asignadas / horas_disponibles_mes * 100) if horas_disponibles_mes > 0 else 0
+
+        # Calcular horas disponibles restantes
+        horas_disponibles_restantes = max(0, horas_disponibles_mes - horas_asignadas)
+
+        # Determinar estado (para colorear en UI)
+        if porcentaje_ocupacion >= 90:
+            estado = 'alto'  # Verde
+        elif porcentaje_ocupacion >= 70:
+            estado = 'medio'  # Amarillo
+        elif porcentaje_ocupacion >= 50:
+            estado = 'bajo'  # Naranja
+        else:
+            estado = 'muy_bajo'  # Rojo
+
+        productividad_data.append({
+            'persona': persona,
+            'horas_disponibles': horas_disponibles_mes,
+            'horas_asignadas': round(horas_asignadas, 1),
+            'porcentaje_ocupacion': round(porcentaje_ocupacion, 1),
+            'horas_disponibles_restantes': round(horas_disponibles_restantes, 1),
+            'estado': estado
+        })
+
+    # Calcular totales
+    total_horas_disponibles = len(personas_activas) * horas_disponibles_mes
+    total_horas_asignadas = sum(p['horas_asignadas'] for p in productividad_data)
+    total_porcentaje = (total_horas_asignadas / total_horas_disponibles * 100) if total_horas_disponibles > 0 else 0
+
+    stats = {
+        'total_personas': len(personas_activas),
+        'horas_disponibles_por_persona': horas_disponibles_mes,
+        'total_horas_disponibles': total_horas_disponibles,
+        'total_horas_asignadas': round(total_horas_asignadas, 1),
+        'total_porcentaje': round(total_porcentaje, 1),
+        'total_horas_restantes': round(total_horas_disponibles - total_horas_asignadas, 1)
+    }
+
+    return render_template('productividad_personas.html',
+                          productividad_data=productividad_data,
+                          stats=stats,
                           año=año,
                           mes=mes)
 
