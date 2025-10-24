@@ -1565,6 +1565,10 @@ def rentabilidad():
                     horas_no_imputadas_total += horas_gap
                     costo_no_imputadas_total += horas_gap * persona.costo_hora_uf
 
+    # ===== CALCULAR Y DISTRIBUIR OVERHEAD =====
+    overhead_info = calcular_overhead_distribuido(año, mes)
+    distribucion_overhead = overhead_info['distribucion_por_cliente']
+
     # ===== ANÁLISIS POR CLIENTE =====
     clientes_analisis = []
     clientes = Cliente.query.filter_by(activo=True).all()
@@ -1593,9 +1597,13 @@ def rentabilidad():
 
         registros_horas = registros_horas.all()
         total_horas_cliente = sum(r.horas for r in registros_horas)
-        total_costos_cliente = sum(r.costo_uf for r in registros_horas)
+        total_costos_directos_cliente = sum(r.costo_uf for r in registros_horas)
 
-        # Calcular margen
+        # Obtener overhead asignado a este cliente
+        overhead_cliente = distribucion_overhead.get(cliente.id, 0)
+
+        # Calcular margen CON overhead
+        total_costos_cliente = total_costos_directos_cliente + overhead_cliente
         margen_cliente = total_ingresos_cliente - total_costos_cliente
         margen_porcentaje_cliente = (margen_cliente / total_ingresos_cliente * 100) if total_ingresos_cliente > 0 else 0
 
@@ -1675,7 +1683,9 @@ def rentabilidad():
                 'cliente': cliente,
                 'ingresos': round(total_ingresos_cliente, 2),
                 'horas': round(total_horas_cliente, 2),
-                'costos': round(total_costos_cliente, 2),
+                'costos_directos': round(total_costos_directos_cliente, 2),
+                'overhead': round(overhead_cliente, 2),
+                'costos': round(total_costos_cliente, 2),  # Total = directos + overhead
                 'margen': round(margen_cliente, 2),
                 'margen_porcentaje': round(margen_porcentaje_cliente, 2) if total_ingresos_cliente > 0 else 0,
                 'servicios': servicios_analisis,
@@ -1736,6 +1746,7 @@ def rentabilidad():
                           stats=stats,
                           clientes_analisis=clientes_analisis,
                           areas_analisis=areas_analisis,
+                          overhead_info=overhead_info,
                           año=año,
                           mes=mes)
 

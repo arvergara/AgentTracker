@@ -1,0 +1,171 @@
+{
+  "resumen": {
+    "concepto": "Gastos Mensuales Operacionales",
+    "valores_pesos": [
+      28961156.0,
+      30623593.0,
+      36115463.0,
+      38753851.0,
+      34297620.0,
+      41666463.0,
+      36238657.0,
+      37655269.0,
+      35393395.0,
+      37783877.3636,
+      36171703.677600004,
+      33056342.677600004
+    ],
+    "valores_uf": [
+      753.8204495307941,
+      797.8648546334173,
+      934.1079661330391,
+      996.2654939237699,
+      877.583229065117,
+      1063.137755004405,
+      922.8149496469159,
+      961.2323750859947,
+      898.4358460555114,
+      956.901491139186,
+      913.362971266909,
+      834.6977415367664
+    ],
+    "valores_uf_mensual": {
+      "1": 38419.17,
+      "2": 38381.93,
+      "3": 38663.05,
+      "4": 38899.12,
+      "5": 39081.9,
+      "6": 39191.97,
+      "7": 39269.69,
+      "8": 39173.95,
+      "9": 39394.46,
+      "10": 39485.65,
+      "11": 39602.77,
+      "12": 39602.77
+    },
+    "total_pesos": 426717390.7188,
+    "total_uf": 10910.225123021826
+  },
+  "gastos_por_mes": [
+    {
+      "año": 2025,
+      "mes": 1,
+      "mes_nombre": "Enero",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 28961156.0,
+      "monto_uf": 753.8204495307941,
+      "valor_uf": 38419.17
+    },
+    {
+      "año": 2025,
+      "mes": 2,
+      "mes_nombre": "Febrero",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 30623593.0,
+      "monto_uf": 797.8648546334173,
+      "valor_uf": 38381.93
+    },
+    {
+      "año": 2025,
+      "mes": 3,
+      "mes_nombre": "Marzo",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 36115463.0,
+      "monto_uf": 934.1079661330391,
+      "valor_uf": 38663.05
+    },
+    {
+      "año": 2025,
+      "mes": 4,
+      "mes_nombre": "Abril",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 38753851.0,
+      "monto_uf": 996.2654939237699,
+      "valor_uf": 38899.12
+    },
+    {
+      "año": 2025,
+      "mes": 5,
+      "mes_nombre": "Mayo",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 34297620.0,
+      "monto_uf": 877.583229065117,
+      "valor_uf": 39081.9
+    },
+    {
+      "año": 2025,
+      "mes": 6,
+      "mes_nombre": "Junio",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 41666463.0,
+      "monto_uf": 1063.137755004405,
+      "valor_uf": 39191.97
+    },
+    {
+      "año": 2025,
+      "mes": 7,
+      "mes_nombre": "Julio",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 36238657.0,
+      "monto_uf": 922.8149496469159,
+      "valor_uf": 39269.69
+    },
+    {
+      "año": 2025,
+      "mes": 8,
+      "mes_nombre": "Agosto",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 37655269.0,
+      "monto_uf": 961.2323750859947,
+      "valor_uf": 39173.95
+    },
+    {
+      "año": 2025,
+      "mes": 9,
+      "mes_nombre": "Septiembre",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 35393395.0,
+      "monto_uf": 898.4358460555114,
+      "valor_uf": 39394.46
+    },
+    {
+      "año": 2025,
+      "mes": 10,
+      "mes_nombre": "Octubre",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 37783877.3636,
+      "monto_uf": 956.901491139186,
+      "valor_uf": 39485.65
+    },
+    {
+      "año": 2025,
+      "mes": 11,
+      "mes_nombre": "Noviembre",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 36171703.677600004,
+      "monto_uf": 913.362971266909,
+      "valor_uf": 39602.77
+    },
+    {
+      "año": 2025,
+      "mes": 12,
+      "mes_nombre": "Diciembre",
+      "concepto": "Gastos Operacionales Mensuales",
+      "categoria": "Overhead General",
+      "monto_pesos": 33056342.677600004,
+      "monto_uf": 834.6977415367664,
+      "valor_uf": 39602.77
+    }
+  ]
+}

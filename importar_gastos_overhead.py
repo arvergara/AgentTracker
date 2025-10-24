@@ -60,8 +60,8 @@ def main():
     print("IMPORTACIÓN DE GASTOS OVERHEAD")
     print("=" * 80)
 
-    # Leer JSON
-    json_path = 'gastos_overhead_2025.json'
+    # Leer JSON (usar el archivo actualizado con línea 74)
+    json_path = 'gastos_overhead_2025_real.json'
 
     if not os.path.exists(json_path):
         print(f"\n❌ Error: No se encontró el archivo {json_path}")
@@ -70,8 +70,10 @@ def main():
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    gastos = data['gastos']
-    print(f"\n📂 Cargados {len(gastos)} conceptos de gasto")
+    gastos_por_mes = data['gastos_por_mes']
+    resumen = data['resumen']
+    print(f"\n📂 Datos cargados: {len(gastos_por_mes)} registros mensuales")
+    print(f"💰 Total anual: ${resumen['total_pesos']:,.0f} = {resumen['total_uf']:.2f} UF")
 
     # Conectar a BD
     print(f"\n🔗 Conectando a: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}")
@@ -95,59 +97,38 @@ def main():
             return
 
     # Importar gastos
-    meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    print("\n📥 Importando gastos overhead mensuales...")
 
     total_registros = 0
-    registros_por_categoria = {}
 
-    print("\n📥 Importando gastos...")
+    for gasto_mes in gastos_por_mes:
+        nuevo_gasto = GastoOverhead(
+            año=gasto_mes['año'],
+            mes=gasto_mes['mes'],
+            concepto=gasto_mes['concepto'],
+            categoria=gasto_mes['categoria'],
+            monto_pesos=float(gasto_mes['monto_pesos'])
+        )
+        session.add(nuevo_gasto)
+        total_registros += 1
 
-    for gasto in gastos:
-        concepto = gasto['concepto']
-        categoria = categorizar_gasto(concepto)
-
-        # Excluir ciertos conceptos que no son overhead puro
-        conceptos_excluir = ['aportes patronales', 'jazmin', 'jazmín']
-        if any(exc in concepto.lower() for exc in conceptos_excluir):
-            print(f"   ⏭️  Omitiendo: {concepto} (es parte de remuneraciones)")
-            continue
-
-        # Contador por categoría
-        registros_por_categoria[categoria] = registros_por_categoria.get(categoria, 0) + 1
-
-        # Crear registros mensuales
-        for mes_idx, valor in enumerate(gasto['valores_mensuales']):
-            if valor > 0:  # Solo importar si hay valor
-                nuevo_gasto = GastoOverhead(
-                    año=2025,
-                    mes=mes_idx + 1,
-                    concepto=concepto,
-                    categoria=categoria,
-                    monto_pesos=float(valor)
-                )
-                session.add(nuevo_gasto)
-                total_registros += 1
+        print(f"   {gasto_mes['mes_nombre']:>12}: ${gasto_mes['monto_pesos']:>15,.0f} = {gasto_mes['monto_uf']:>8,.2f} UF")
 
     # Commit
     try:
         session.commit()
         print(f"\n✅ Importación completada: {total_registros} registros")
 
-        print("\n📊 Resumen por categoría:")
-        for cat, count in sorted(registros_por_categoria.items()):
-            print(f"   {cat:.<30} {count:>3} conceptos")
+        # Verificar totales
+        print("\n📊 Verificación en BD:")
+        total_en_bd = session.query(GastoOverhead).filter_by(año=2025).with_entities(
+            GastoOverhead.monto_pesos
+        ).all()
 
-        # Verificar totales por mes
-        print("\n💰 Totales por mes:")
-        for mes_idx, mes_nombre in enumerate(meses):
-            total_mes = session.query(GastoOverhead).filter_by(
-                año=2025,
-                mes=mes_idx + 1
-            ).with_entities(GastoOverhead.monto_pesos).all()
-
-            suma = sum(row[0] for row in total_mes)
-            print(f"   {mes_nombre:>12}: ${suma:>15,.0f}")
+        suma_bd = sum(row[0] for row in total_en_bd)
+        print(f"   Total en BD:      ${suma_bd:>15,.0f}")
+        print(f"   Total esperado:   ${resumen['total_pesos']:>15,.0f}")
+        print(f"   Diferencia:       ${abs(suma_bd - resumen['total_pesos']):>15,.0f}")
 
     except Exception as e:
         session.rollback()
