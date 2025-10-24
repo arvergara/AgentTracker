@@ -251,7 +251,7 @@
 
         <!-- NIVEL 2.5: Rentabilidad por Cliente y Área -->
         <div class="quick-actions" style="margin-top: 30px;">
-            <h3 style="font-size: 18px; color: #333;">💰 Top 5 Clientes Más Rentables (2025)</h3>
+            <h3 style="font-size: 18px; color: #333;">💰 Clientes Rentables (2025)</h3>
             <div id="top-clientes-container" style="margin-top: 15px;">
                 <div style="text-align: center; padding: 20px; color: #94a3b8;">
                     Cargando datos...
@@ -363,7 +363,7 @@
         // Cargar top clientes rentables
         async function cargarTopClientes() {
             try {
-                const response = await fetch('/api/top-clientes-rentables?año=2025&top=5');
+                const response = await fetch('/api/top-clientes-rentables?año=2025&top=0');
                 const data = await response.json();
 
                 console.log('Top clientes data:', data);

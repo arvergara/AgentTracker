@@ -2189,10 +2189,14 @@ def api_top_clientes_rentables():
 
     # Debug logging
     print(f"[DEBUG] Top clientes - Total clientes analizados: {len(clientes)}, Con ingresos: {len(clientes_analisis)}")
-    print(f"[DEBUG] Top {top} clientes: {clientes_analisis[:top]}")
 
-    # Retornar solo el top
-    return jsonify(clientes_analisis[:top])
+    # Si top=0, devolver todos; si no, devolver solo el top
+    if top == 0:
+        print(f"[DEBUG] Devolviendo TODOS los clientes ({len(clientes_analisis)})")
+        return jsonify(clientes_analisis)
+    else:
+        print(f"[DEBUG] Top {top} clientes: {clientes_analisis[:top]}")
+        return jsonify(clientes_analisis[:top])
 
 
 # ============= INICIALIZACIÓN =============
