@@ -1495,19 +1495,28 @@ def eliminar_servicio(servicio_id):
 def nuevo_cliente():
     """Crear nuevo cliente"""
     if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        tipo = request.form.get('tipo', 'permanente')
+        try:
+            nombre = request.form.get('nombre')
+            tipo = request.form.get('tipo', 'permanente')
 
-        cliente = Cliente(
-            nombre=nombre,
-            tipo=tipo,
-            activo=True
-        )
-        db.session.add(cliente)
-        db.session.commit()
+            cliente = Cliente(
+                nombre=nombre,
+                tipo=tipo,
+                activo=True
+            )
+            db.session.add(cliente)
+            db.session.commit()
 
-        flash(f'Cliente {nombre} creado exitosamente', 'success')
-        return redirect(url_for('editar_cliente', cliente_id=cliente.id))
+            flash(f'Cliente {nombre} creado exitosamente', 'success')
+            return redirect(url_for('editar_cliente', cliente_id=cliente.id))
+
+        except Exception as e:
+            db.session.rollback()
+            import traceback
+            error_detail = traceback.format_exc()
+            flash(f'Error al crear cliente: {str(e)}', 'error')
+            print(f"ERROR en nuevo_cliente: {error_detail}")
+            return render_template('nuevo_cliente.html')
 
     return render_template('nuevo_cliente.html')
 
