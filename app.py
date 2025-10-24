@@ -1073,8 +1073,8 @@ def capacidad():
     for persona in personas:
         # Obtener registros de horas del mes/año
         registros = RegistroHora.query.filter_by(persona_id=persona.id).filter(
-            db.extract('year', RegistroHora.fecha) == año,
-            db.extract('month', RegistroHora.fecha) == mes
+            extract('year', RegistroHora.fecha) == año,
+            extract('month', RegistroHora.fecha) == mes
         ).all()
 
         total_horas = sum(r.horas for r in registros)
@@ -1458,10 +1458,10 @@ def rentabilidad():
 
         # Calcular costos (horas trabajadas en este cliente)
         registros_horas = RegistroHora.query.filter_by(cliente_id=cliente.id).filter(
-            db.extract('year', RegistroHora.fecha) == año
+            extract('year', RegistroHora.fecha) == año
         )
         if mes:
-            registros_horas = registros_horas.filter(db.extract('month', RegistroHora.fecha) == mes)
+            registros_horas = registros_horas.filter(extract('month', RegistroHora.fecha) == mes)
 
         registros_horas = registros_horas.all()
         total_horas_cliente = sum(r.horas for r in registros_horas)
@@ -1487,10 +1487,10 @@ def rentabilidad():
 
             # Costos del servicio (horas trabajadas en este servicio)
             registros_servicio = RegistroHora.query.filter_by(servicio_id=servicio.id).filter(
-                db.extract('year', RegistroHora.fecha) == año
+                extract('year', RegistroHora.fecha) == año
             )
             if mes:
-                registros_servicio = registros_servicio.filter(db.extract('month', RegistroHora.fecha) == mes)
+                registros_servicio = registros_servicio.filter(extract('month', RegistroHora.fecha) == mes)
 
             registros_servicio = registros_servicio.all()
             total_horas_servicio = sum(r.horas for r in registros_servicio)
