@@ -2310,7 +2310,7 @@ def api_rentabilidad_por_area():
 @app.route('/api/top-clientes-rentables')
 @login_required
 def api_top_clientes_rentables():
-    """API: Top clientes más rentables (solo para socias/admin)"""
+    """API: Top clientes más rentables con separación de costos variables y fijos"""
     es_socia = session.get('es_socia', False)
     es_admin = session.get('es_admin', False)
 
@@ -2319,6 +2319,10 @@ def api_top_clientes_rentables():
 
     año = request.args.get('año', datetime.now().year, type=int)
     top = request.args.get('top', 5, type=int)
+
+    # Calcular overhead distribuido
+    overhead_info = calcular_overhead_distribuido(año, mes=None)
+    distribucion_overhead = overhead_info['distribucion_por_cliente']
 
     clientes_analisis = []
     clientes = Cliente.query.filter_by(activo=True).all()
@@ -2335,13 +2339,19 @@ def api_top_clientes_rentables():
         ingresos_cliente = ingresos_cliente_query.all()
         total_ingresos = sum(i.ingreso_uf for i in ingresos_cliente)
 
-        # Calcular costos (horas trabajadas en este cliente)
+        # Calcular costos directos (horas trabajadas en este cliente)
         registros_horas = RegistroHora.query.filter_by(cliente_id=cliente.id).filter(
             extract('year', RegistroHora.fecha) == año
         ).all()
-        total_costos = sum(r.costo_uf for r in registros_horas)
+        costos_directos = sum(r.costo_uf for r in registros_horas)
 
-        # Calcular margen
+        # Obtener overhead asignado
+        overhead_cliente = distribucion_overhead.get(cliente.id, 0)
+
+        # Costos totales = directos + overhead
+        total_costos = costos_directos + overhead_cliente
+
+        # Calcular margen CON overhead
         utilidad_neta = total_ingresos - total_costos
         margen_porcentaje = (utilidad_neta / total_ingresos * 100) if total_ingresos > 0 else 0
 
@@ -2349,7 +2359,9 @@ def api_top_clientes_rentables():
             clientes_analisis.append({
                 'cliente': cliente.nombre,
                 'ingresos_uf': round(total_ingresos, 1),
-                'costos_uf': round(total_costos, 1),
+                'costos_directos_uf': round(costos_directos, 1),  # Costo Variable (Horas)
+                'overhead_uf': round(overhead_cliente, 1),  # Costo Fijo (Overhead)
+                'costos_uf': round(total_costos, 1),  # Total
                 'utilidad_neta_uf': round(utilidad_neta, 1),
                 'margen': round(margen_porcentaje, 1)
             })

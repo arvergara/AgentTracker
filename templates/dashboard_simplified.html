@@ -255,7 +255,7 @@
 
         <!-- NIVEL 2.5: Rentabilidad por Cliente y Área -->
         <div class="quick-actions" style="margin-top: 30px;">
-            <h3 style="font-size: 18px; color: #333;">💰 Clientes Rentables (2025)</h3>
+            <h3 style="font-size: 18px; color: #333;">💰 Resultado de Clientes 2025</h3>
             <div id="top-clientes-container" style="margin-top: 15px;">
                 <div style="text-align: center; padding: 20px; color: #94a3b8;">
                     Cargando datos...
@@ -386,7 +386,9 @@
                                 <th style="padding: 12px; text-align: left; font-size: 13px; color: #64748b;">#</th>
                                 <th style="padding: 12px; text-align: left; font-size: 13px; color: #64748b;">Cliente</th>
                                 <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Ingresos (UF)</th>
-                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Costos (UF)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Costo Variable (Horas)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Costo Fijo (Overhead)</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Costos Totales (UF)</th>
                                 <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Utilidad (UF)</th>
                                 <th style="padding: 12px; text-align: right; font-size: 13px; color: #64748b;">Margen (%)</th>
                             </tr>
@@ -403,7 +405,9 @@
                             <td style="padding: 12px; font-size: 14px;">${index + 1}</td>
                             <td style="padding: 12px; font-size: 14px; font-weight: 600;">${cliente.cliente}</td>
                             <td style="padding: 12px; text-align: right; font-size: 14px;">${formatNumber(cliente.ingresos_uf)}</td>
-                            <td style="padding: 12px; text-align: right; font-size: 14px;">${formatNumber(cliente.costos_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; color: #f97316;">${formatNumber(cliente.costos_directos_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; color: #8b5cf6;">${formatNumber(cliente.overhead_uf)}</td>
+                            <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 500;">${formatNumber(cliente.costos_uf)}</td>
                             <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: ${utilidadColor};">${formatNumber(cliente.utilidad_neta_uf)}</td>
                             <td style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: ${margenColor};">${formatNumber(cliente.margen)}%</td>
                         </tr>
