@@ -396,9 +396,23 @@
                         <tbody>
                 `;
 
+                // Calcular totales
+                let totalIngresos = 0;
+                let totalCostosDirectos = 0;
+                let totalOverhead = 0;
+                let totalCostos = 0;
+                let totalUtilidad = 0;
+
                 data.forEach((cliente, index) => {
                     const utilidadColor = cliente.utilidad_neta_uf > 0 ? '#10b981' : '#ef4444';
                     const margenColor = cliente.margen > 0 ? '#10b981' : '#ef4444';
+
+                    // Acumular totales
+                    totalIngresos += cliente.ingresos_uf;
+                    totalCostosDirectos += cliente.costos_directos_uf;
+                    totalOverhead += cliente.overhead_uf;
+                    totalCostos += cliente.costos_uf;
+                    totalUtilidad += cliente.utilidad_neta_uf;
 
                     html += `
                         <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -413,6 +427,23 @@
                         </tr>
                     `;
                 });
+
+                // Agregar fila de totales
+                const margenTotal = totalIngresos > 0 ? ((totalUtilidad / totalIngresos) * 100) : 0;
+                const margenTotalColor = margenTotal > 0 ? '#10b981' : '#ef4444';
+                const utilidadTotalColor = totalUtilidad > 0 ? '#10b981' : '#ef4444';
+
+                html += `
+                    <tr style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 700;">
+                        <td colspan="2" style="padding: 14px; font-size: 15px; color: #1e293b;">TOTAL</td>
+                        <td style="padding: 14px; text-align: right; font-size: 15px; color: #1e293b;">${formatNumber(totalIngresos)}</td>
+                        <td style="padding: 14px; text-align: right; font-size: 15px; color: #f97316;">${formatNumber(totalCostosDirectos)}</td>
+                        <td style="padding: 14px; text-align: right; font-size: 15px; color: #8b5cf6;">${formatNumber(totalOverhead)}</td>
+                        <td style="padding: 14px; text-align: right; font-size: 15px; color: #1e293b;">${formatNumber(totalCostos)}</td>
+                        <td style="padding: 14px; text-align: right; font-size: 15px; color: ${utilidadTotalColor};">${formatNumber(totalUtilidad)}</td>
+                        <td style="padding: 14px; text-align: right; font-size: 15px; color: ${margenTotalColor};">${formatNumber(margenTotal)}%</td>
+                    </tr>
+                `;
 
                 html += '</tbody></table>';
                 container.innerHTML = html;
