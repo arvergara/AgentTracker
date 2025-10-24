@@ -25,6 +25,9 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'comsulting-secret-key-2
 
 db = SQLAlchemy(app)
 
+# Agregar funciones min y max a Jinja2
+app.jinja_env.globals.update(min=min, max=max)
+
 # Filtro personalizado para formato latino de números
 @app.template_filter('formato_numero')
 def formato_numero_filter(valor, decimales=1):
