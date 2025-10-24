@@ -124,6 +124,117 @@ def proyeccion_anual_servicio_ajustada(servicio, año):
     return proyeccion
 
 
+def calcular_overhead_distribuido(año, mes=None):
+    """
+    Calcula el overhead total del período y lo distribuye proporcionalmente por cliente.
+
+    El overhead incluye:
+    1. Gastos operacionales (de tabla gastos_overhead)
+    2. Costo de horas no imputadas (gap de cada persona)
+
+    La distribución se hace proporcionalmente según las horas trabajadas en cada cliente.
+
+    Args:
+        año: Año para calcular overhead
+        mes: Mes específico (None = todo el año)
+
+    Returns:
+        dict: {
+            'overhead_total_uf': float,
+            'overhead_operacional_pesos': float,
+            'overhead_horas_no_imputadas_uf': float,
+            'total_horas_asignadas': float,
+            'distribucion_por_cliente': {cliente_id: overhead_uf}
+        }
+    """
+    # 1. Calcular gastos operacionales (overhead de tabla)
+    query_overhead = GastoOverhead.query.filter_by(año=año)
+    if mes:
+        query_overhead = query_overhead.filter_by(mes=mes)
+
+    gastos_overhead = query_overhead.all()
+    total_overhead_pesos = sum(g.monto_pesos for g in gastos_overhead)
+    overhead_operacional_uf = total_overhead_pesos / VALOR_UF_ACTUAL
+
+    # 2. Calcular costo de horas no imputadas
+    personas_activas = Persona.query.filter_by(activo=True).all()
+    costo_horas_no_imputadas_uf = 0
+
+    if mes:
+        # Un mes específico
+        horas_disponibles_mes = calcular_horas_disponibles_mes(año, mes)
+
+        for persona in personas_activas:
+            horas_registradas = db.session.query(func.sum(RegistroHora.horas)).filter(
+                RegistroHora.persona_id == persona.id,
+                extract('year', RegistroHora.fecha) == año,
+                extract('month', RegistroHora.fecha) == mes
+            ).scalar() or 0
+
+            horas_gap = max(0, horas_disponibles_mes - horas_registradas)
+            if horas_gap > 0:
+                costo_horas_no_imputadas_uf += horas_gap * persona.costo_hora_uf
+    else:
+        # Todo el año
+        for mes_iter in range(1, 13):
+            horas_disponibles_mes = calcular_horas_disponibles_mes(año, mes_iter)
+
+            for persona in personas_activas:
+                horas_registradas = db.session.query(func.sum(RegistroHora.horas)).filter(
+                    RegistroHora.persona_id == persona.id,
+                    extract('year', RegistroHora.fecha) == año,
+                    extract('month', RegistroHora.fecha) == mes_iter
+                ).scalar() or 0
+
+                horas_gap = max(0, horas_disponibles_mes - horas_registradas)
+                if horas_gap > 0:
+                    costo_horas_no_imputadas_uf += horas_gap * persona.costo_hora_uf
+
+    # 3. Overhead total
+    overhead_total_uf = overhead_operacional_uf + costo_horas_no_imputadas_uf
+
+    # 4. Calcular total de horas asignadas a clientes (para distribución proporcional)
+    query_horas = RegistroHora.query.filter(extract('year', RegistroHora.fecha) == año)
+    if mes:
+        query_horas = query_horas.filter(extract('month', RegistroHora.fecha) == mes)
+
+    registros_todos = query_horas.all()
+    total_horas_asignadas = sum(r.horas for r in registros_todos)
+
+    # 5. Distribuir overhead proporcionalmente por cliente
+    distribucion_por_cliente = {}
+    clientes = Cliente.query.filter_by(activo=True).all()
+
+    for cliente in clientes:
+        # Horas del cliente
+        query_cliente = RegistroHora.query.filter_by(cliente_id=cliente.id).filter(
+            extract('year', RegistroHora.fecha) == año
+        )
+        if mes:
+            query_cliente = query_cliente.filter(extract('month', RegistroHora.fecha) == mes)
+
+        registros_cliente = query_cliente.all()
+        horas_cliente = sum(r.horas for r in registros_cliente)
+
+        # Overhead proporcional
+        if total_horas_asignadas > 0:
+            porcentaje_cliente = horas_cliente / total_horas_asignadas
+            overhead_cliente = overhead_total_uf * porcentaje_cliente
+        else:
+            overhead_cliente = 0
+
+        distribucion_por_cliente[cliente.id] = round(overhead_cliente, 2)
+
+    return {
+        'overhead_total_uf': round(overhead_total_uf, 2),
+        'overhead_operacional_pesos': round(total_overhead_pesos, 2),
+        'overhead_operacional_uf': round(overhead_operacional_uf, 2),
+        'overhead_horas_no_imputadas_uf': round(costo_horas_no_imputadas_uf, 2),
+        'total_horas_asignadas': round(total_horas_asignadas, 2),
+        'distribucion_por_cliente': distribucion_por_cliente
+    }
+
+
 # ============= MODELOS SIMPLIFICADOS =============
 
 class Persona(db.Model):
@@ -417,6 +528,23 @@ class Valorizacion(db.Model):
 
     def __repr__(self):
         return f'<Valorizacion {self.nombre}>'
+
+
+class GastoOverhead(db.Model):
+    """Gastos operacionales mensuales (overhead) que se distribuyen proporcionalmente"""
+    __tablename__ = 'gastos_overhead'
+
+    id = db.Column(db.Integer, primary_key=True)
+    año = db.Column(db.Integer, nullable=False)
+    mes = db.Column(db.Integer, nullable=False)  # 1-12
+    concepto = db.Column(db.String(200), nullable=False)
+    categoria = db.Column(db.String(100))  # Ej: "Oficina", "Servicios", "Administrativo"
+    monto_pesos = db.Column(db.Float, nullable=False, default=0)
+    descripcion = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def __repr__(self):
+        return f'<GastoOverhead {self.año}/{self.mes} - {self.concepto}>'
 
 
 # ============= DECORADORES DE AUTENTICACIÓN =============
