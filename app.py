@@ -1609,6 +1609,139 @@ def rentabilidad():
                           mes=mes)
 
 
+@app.route('/productividad')
+@socia_required
+def productividad():
+    """Vista de productividad y rentabilidad completa (solo socias)"""
+    meses = request.args.get('meses', 12, type=int)
+
+    # Calcular fecha de inicio
+    fecha_fin = datetime.now().date()
+    fecha_inicio = fecha_fin - timedelta(days=meses * 30)
+
+    # Obtener clientes con análisis
+    clientes = []
+    servicios = []
+    areas = {}
+
+    todos_clientes = Cliente.query.filter_by(activo=True).all()
+
+    for cliente in todos_clientes:
+        if cliente.nombre == 'CLIENTES PERMANENTES':
+            continue
+
+        # Calcular horas
+        horas_query = db.session.query(func.sum(RegistroHora.horas)).filter(
+            RegistroHora.cliente_id == cliente.id,
+            RegistroHora.fecha >= fecha_inicio
+        ).scalar() or 0
+
+        # Calcular costos
+        costos_query = db.session.query(func.sum(RegistroHora.costo_uf)).filter(
+            RegistroHora.cliente_id == cliente.id,
+            RegistroHora.fecha >= fecha_inicio
+        ).scalar() or 0
+
+        # Calcular ingresos
+        ingresos_query = db.session.query(func.sum(IngresoMensual.ingreso_uf)).join(
+            ServicioCliente
+        ).filter(
+            ServicioCliente.cliente_id == cliente.id,
+            IngresoMensual.año == datetime.now().year
+        ).scalar() or 0
+
+        if horas_query > 0 or ingresos_query > 0:
+            margen_uf = ingresos_query - costos_query
+            margen_porcentaje = (margen_uf / ingresos_query * 100) if ingresos_query > 0 else 0
+
+            clientes.append({
+                'id': cliente.id,
+                'nombre': cliente.nombre,
+                'area': cliente.area,
+                'tipo': cliente.tipo,
+                'horas': horas_query,
+                'ingresos_uf': ingresos_query,
+                'costos_uf': costos_query,
+                'margen_uf': margen_uf,
+                'margen_porcentaje': margen_porcentaje
+            })
+
+        # Procesar servicios del cliente
+        for servicio in cliente.servicios.filter_by(activo=True).all():
+            horas_servicio = db.session.query(func.sum(RegistroHora.horas)).filter(
+                RegistroHora.servicio_id == servicio.id,
+                RegistroHora.fecha >= fecha_inicio
+            ).scalar() or 0
+
+            costos_servicio = db.session.query(func.sum(RegistroHora.costo_uf)).filter(
+                RegistroHora.servicio_id == servicio.id,
+                RegistroHora.fecha >= fecha_inicio
+            ).scalar() or 0
+
+            ingresos_servicio = db.session.query(func.sum(IngresoMensual.ingreso_uf)).filter(
+                IngresoMensual.servicio_id == servicio.id,
+                IngresoMensual.año == datetime.now().year
+            ).scalar() or 0
+
+            if horas_servicio > 0 or ingresos_servicio > 0:
+                margen_servicio = ingresos_servicio - costos_servicio
+                margen_porcentaje_servicio = (margen_servicio / ingresos_servicio * 100) if ingresos_servicio > 0 else 0
+
+                servicios.append({
+                    'nombre': f"{cliente.nombre} - {servicio.nombre}",
+                    'area': cliente.area,
+                    'horas': horas_servicio,
+                    'ingresos_uf': ingresos_servicio,
+                    'costos_uf': costos_servicio,
+                    'margen_uf': margen_servicio,
+                    'margen_porcentaje': margen_porcentaje_servicio
+                })
+
+    # Procesar áreas
+    todas_areas = Area.query.filter_by(activo=True).all()
+    for area in todas_areas:
+        horas_area = db.session.query(func.sum(RegistroHora.horas)).filter(
+            RegistroHora.area_id == area.id,
+            RegistroHora.fecha >= fecha_inicio
+        ).scalar() or 0
+
+        costos_area = db.session.query(func.sum(RegistroHora.costo_uf)).filter(
+            RegistroHora.area_id == area.id,
+            RegistroHora.fecha >= fecha_inicio
+        ).scalar() or 0
+
+        if horas_area > 0:
+            areas[area.nombre] = {
+                'horas': horas_area,
+                'costos_uf': costos_area,
+                'ingresos_uf': 0,  # Se calculará después
+                'margen_uf': 0,
+                'margen_porcentaje': 0
+            }
+
+    # Totales
+    total_horas = sum(c['horas'] for c in clientes)
+    total_ingresos = sum(c['ingresos_uf'] for c in clientes)
+    total_costos = sum(c['costos_uf'] for c in clientes)
+    total_margen = total_ingresos - total_costos
+    total_margen_porcentaje = (total_margen / total_ingresos * 100) if total_ingresos > 0 else 0
+
+    total = {
+        'horas': total_horas,
+        'ingresos_uf': total_ingresos,
+        'costos_uf': total_costos,
+        'margen_uf': total_margen,
+        'margen_porcentaje': total_margen_porcentaje
+    }
+
+    return render_template('productividad.html',
+                          clientes=clientes,
+                          servicios=servicios,
+                          areas=areas,
+                          total=total,
+                          meses=meses)
+
+
 # ============= PRODUCTIVIDAD POR PERSONA =============
 
 def calcular_horas_disponibles_7h(año, mes):
