@@ -156,65 +156,80 @@ def calcular_overhead_distribuido(año, mes=None):
     total_overhead_pesos = sum(g.monto_pesos for g in gastos_overhead)
     overhead_operacional_uf = total_overhead_pesos / VALOR_UF_ACTUAL
 
-    # 2. Calcular costo de horas no imputadas
+    # 2. Calcular costo de horas no imputadas (OPTIMIZADO: 1 query en lugar de 456)
     personas_activas = Persona.query.filter_by(activo=True).all()
-    costo_horas_no_imputadas_uf = 0
+    personas_dict = {p.id: p for p in personas_activas}
+
+    # Query agregada: obtener suma de horas por persona y mes en UNA SOLA CONSULTA
+    query_horas_agregadas = db.session.query(
+        RegistroHora.persona_id,
+        extract('month', RegistroHora.fecha).label('mes'),
+        func.sum(RegistroHora.horas).label('total_horas')
+    ).filter(
+        extract('year', RegistroHora.fecha) == año
+    )
 
     if mes:
-        # Un mes específico
-        horas_disponibles_mes = calcular_horas_disponibles_mes(año, mes)
+        query_horas_agregadas = query_horas_agregadas.filter(extract('month', RegistroHora.fecha) == mes)
+
+    query_horas_agregadas = query_horas_agregadas.group_by(
+        RegistroHora.persona_id,
+        extract('month', RegistroHora.fecha)
+    )
+
+    # Diccionario: {persona_id: {mes: horas}}
+    horas_por_persona_mes = {}
+    for persona_id, mes_val, total_horas in query_horas_agregadas.all():
+        if persona_id not in horas_por_persona_mes:
+            horas_por_persona_mes[persona_id] = {}
+        horas_por_persona_mes[persona_id][int(mes_val)] = total_horas
+
+    # Calcular gaps
+    costo_horas_no_imputadas_uf = 0
+    meses_a_calcular = [mes] if mes else range(1, 13)
+
+    for mes_iter in meses_a_calcular:
+        horas_disponibles_mes = calcular_horas_disponibles_mes(año, mes_iter)
 
         for persona in personas_activas:
-            horas_registradas = db.session.query(func.sum(RegistroHora.horas)).filter(
-                RegistroHora.persona_id == persona.id,
-                extract('year', RegistroHora.fecha) == año,
-                extract('month', RegistroHora.fecha) == mes
-            ).scalar() or 0
-
+            horas_registradas = horas_por_persona_mes.get(persona.id, {}).get(mes_iter, 0)
             horas_gap = max(0, horas_disponibles_mes - horas_registradas)
+
             if horas_gap > 0:
                 costo_horas_no_imputadas_uf += horas_gap * persona.costo_hora_uf
-    else:
-        # Todo el año
-        for mes_iter in range(1, 13):
-            horas_disponibles_mes = calcular_horas_disponibles_mes(año, mes_iter)
-
-            for persona in personas_activas:
-                horas_registradas = db.session.query(func.sum(RegistroHora.horas)).filter(
-                    RegistroHora.persona_id == persona.id,
-                    extract('year', RegistroHora.fecha) == año,
-                    extract('month', RegistroHora.fecha) == mes_iter
-                ).scalar() or 0
-
-                horas_gap = max(0, horas_disponibles_mes - horas_registradas)
-                if horas_gap > 0:
-                    costo_horas_no_imputadas_uf += horas_gap * persona.costo_hora_uf
 
     # 3. Overhead total
     overhead_total_uf = overhead_operacional_uf + costo_horas_no_imputadas_uf
 
-    # 4. Calcular total de horas asignadas a clientes (para distribución proporcional)
-    query_horas = RegistroHora.query.filter(extract('year', RegistroHora.fecha) == año)
-    if mes:
-        query_horas = query_horas.filter(extract('month', RegistroHora.fecha) == mes)
+    # 4. Calcular horas por cliente (OPTIMIZADO: 1 query agregada)
+    query_horas_por_cliente = db.session.query(
+        RegistroHora.cliente_id,
+        func.sum(RegistroHora.horas).label('total_horas')
+    ).filter(
+        extract('year', RegistroHora.fecha) == año
+    )
 
-    registros_todos = query_horas.all()
-    total_horas_asignadas = sum(r.horas for r in registros_todos)
+    if mes:
+        query_horas_por_cliente = query_horas_por_cliente.filter(
+            extract('month', RegistroHora.fecha) == mes
+        )
+
+    query_horas_por_cliente = query_horas_por_cliente.group_by(RegistroHora.cliente_id)
+
+    # Diccionario: {cliente_id: horas}
+    horas_por_cliente = {}
+    total_horas_asignadas = 0
+
+    for cliente_id, total_horas in query_horas_por_cliente.all():
+        horas_por_cliente[cliente_id] = total_horas
+        total_horas_asignadas += total_horas
 
     # 5. Distribuir overhead proporcionalmente por cliente
     distribucion_por_cliente = {}
     clientes = Cliente.query.filter_by(activo=True).all()
 
     for cliente in clientes:
-        # Horas del cliente
-        query_cliente = RegistroHora.query.filter_by(cliente_id=cliente.id).filter(
-            extract('year', RegistroHora.fecha) == año
-        )
-        if mes:
-            query_cliente = query_cliente.filter(extract('month', RegistroHora.fecha) == mes)
-
-        registros_cliente = query_cliente.all()
-        horas_cliente = sum(r.horas for r in registros_cliente)
+        horas_cliente = horas_por_cliente.get(cliente.id, 0)
 
         # Overhead proporcional
         if total_horas_asignadas > 0:
