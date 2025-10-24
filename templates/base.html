@@ -21,11 +21,9 @@
                 <li><a href="{{ url_for('productividad_personas') }}">Productividad</a></li>
                 <li><a href="{{ url_for('capacidad') }}">Capacidad</a></li>
                 <li><a href="{{ url_for('valorizacion') }}">Valorización</a></li>
-                <li><a href="{{ url_for('listar_personas') }}">Personas</a></li>
-                <li><a href="{{ url_for('listar_clientes') }}">Clientes</a></li>
-                <li><a href="{{ url_for('listar_proyectos') }}">Proyectos</a></li>
-                <li><a href="{{ url_for('listar_servicios') }}">Servicios</a></li>
-                <li><a href="{{ url_for('listar_horas') }}">Registro de Horas</a></li>
+                <li><a href="{{ url_for('ver_personal') }}">Personal</a></li>
+                <li><a href="{{ url_for('ver_clientes') }}">Clientes</a></li>
+                <li><a href="{{ url_for('mis_horas') }}">Mis Horas</a></li>
                 <li style="margin-left: auto;"><span style="color: #64748b; font-weight: 500;">👤 {{ session.username }}</span></li>
                 <li><a href="{{ url_for('logout') }}" style="color: #ef4444; font-weight: 600;">🚪 Salir</a></li>
             </ul>
