@@ -24,7 +24,7 @@
                 <li><a href="{{ url_for('ver_personal') }}">Personal</a></li>
                 <li><a href="{{ url_for('ver_clientes') }}">Clientes</a></li>
                 <li><a href="{{ url_for('mis_horas') }}">Mis Horas</a></li>
-                <li style="margin-left: auto;"><span style="color: #64748b; font-weight: 500;">👤 {{ session.username }}</span></li>
+                <li style="margin-left: auto;"><span style="color: #64748b; font-weight: 500;">👤 {{ session.user_name }}</span></li>
                 <li><a href="{{ url_for('logout') }}" style="color: #ef4444; font-weight: 600;">🚪 Salir</a></li>
             </ul>
         </div>
