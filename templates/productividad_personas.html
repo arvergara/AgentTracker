@@ -4,387 +4,491 @@
 
 {% block styles %}
 <style>
-    .page-header-custom {
-        text-align: center;
-        margin-bottom: 2rem;
+    .page-header-compact {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #e5e7eb;
     }
 
-    .page-header-custom h1 {
-        font-size: 2.5rem;
-        font-weight: 800;
+    .page-header-compact h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
         color: #1e293b;
-        margin-bottom: 0.5rem;
+        margin: 0;
     }
 
-    .page-header-custom p {
+    .page-header-compact .subtitle {
         color: #64748b;
-        font-size: 1.125rem;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
     }
 
     .period-selector {
         display: flex;
         gap: 0.5rem;
-        margin-bottom: 2rem;
-        justify-content: center;
-        flex-wrap: wrap;
         align-items: center;
     }
 
+    .period-selector label {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
     .period-selector select {
-        padding: 0.75rem 1.5rem;
+        padding: 0.5rem 1rem;
         background: white;
-        border: 2px solid #2563eb;
-        border-radius: 8px;
-        color: #2563eb;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        color: #1e293b;
         font-weight: 600;
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 0.875rem;
     }
 
     .period-selector button {
-        padding: 0.75rem 1.5rem;
+        padding: 0.5rem 1rem;
         background: #2563eb;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         color: white;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
+        font-size: 0.875rem;
+        transition: background 0.2s;
     }
 
     .period-selector button:hover {
         background: #1e40af;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
-    .dashboard-grid {
+    .metrics-compact {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .metric-card {
+    .metric-compact {
+        text-align: center;
+        padding: 0.5rem;
+        border-right: 1px solid #e5e7eb;
+    }
+
+    .metric-compact:last-child {
+        border-right: none;
+    }
+
+    .metric-compact-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .metric-compact-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .search-filter {
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #2563eb;
+    }
+
+    .table-container {
         background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        border-left: 4px solid #2563eb;
-        transition: all 0.3s ease;
-        position: relative;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         overflow: hidden;
     }
 
-    .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-    }
-
-    .metric-icon {
-        font-size: 2rem;
-        position: absolute;
-        right: 1rem;
-        top: 1rem;
-        opacity: 0.2;
-    }
-
-    .metric-label {
+    .productividad-table {
+        width: 100%;
+        border-collapse: collapse;
         font-size: 0.875rem;
-        color: #64748b;
-        font-weight: 600;
+    }
+
+    .productividad-table thead {
+        background: #f8fafc;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .productividad-table th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 700;
+        color: #475569;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-    }
-
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0.5rem 0;
-    }
-
-    .metric-sublabel {
         font-size: 0.75rem;
-        color: #94a3b8;
-        margin-top: 0.25rem;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
     }
 
-    .personas-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 1.5rem;
-        margin-top: 2rem;
+    .productividad-table th:hover {
+        background: #f1f5f9;
     }
 
-    .persona-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
-        border-left: 6px solid;
+    .productividad-table th .sort-icon {
+        margin-left: 0.25rem;
+        opacity: 0.5;
     }
 
-    .persona-card.alto {
-        border-left-color: #10b981;
+    .productividad-table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.2s;
     }
 
-    .persona-card.medio {
-        border-left-color: #f59e0b;
+    .productividad-table tbody tr:hover {
+        background: #f8fafc;
     }
 
-    .persona-card.bajo {
-        border-left-color: #ef4444;
-    }
-
-    .persona-card.muy_bajo {
-        border-left-color: #dc2626;
-    }
-
-    .persona-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-    }
-
-    .persona-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #f3f4f6;
-    }
-
-    .persona-nombre {
-        font-size: 1.25rem;
-        font-weight: 700;
+    .productividad-table td {
+        padding: 0.75rem 1rem;
         color: #1e293b;
     }
 
-    .persona-porcentaje {
-        font-size: 1.5rem;
-        font-weight: 800;
+    .nombre-cell {
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
-    .persona-porcentaje.alto {
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .status-indicator.alto {
+        background: #10b981;
+    }
+
+    .status-indicator.medio {
+        background: #f59e0b;
+    }
+
+    .status-indicator.bajo {
+        background: #ef4444;
+    }
+
+    .status-indicator.muy_bajo {
+        background: #dc2626;
+    }
+
+    .progress-bar-inline {
+        width: 100%;
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill-inline {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-fill-inline.alto {
+        background: #10b981;
+    }
+
+    .progress-fill-inline.medio {
+        background: #f59e0b;
+    }
+
+    .progress-fill-inline.bajo {
+        background: #ef4444;
+    }
+
+    .progress-fill-inline.muy_bajo {
+        background: #dc2626;
+    }
+
+    .porcentaje-cell {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .porcentaje-cell.alto {
         color: #10b981;
     }
 
-    .persona-porcentaje.medio {
+    .porcentaje-cell.medio {
         color: #f59e0b;
     }
 
-    .persona-porcentaje.bajo {
+    .porcentaje-cell.bajo {
         color: #ef4444;
     }
 
-    .persona-porcentaje.muy_bajo {
+    .porcentaje-cell.muy_bajo {
         color: #dc2626;
     }
 
-    .progress-bar {
-        width: 100%;
-        height: 20px;
-        background: #f3f4f6;
-        border-radius: 10px;
-        overflow: hidden;
-        margin: 1rem 0;
-    }
+    @media (max-width: 1024px) {
+        .metrics-compact {
+            grid-template-columns: repeat(3, 1fr);
+        }
 
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
-        transition: width 0.3s ease;
-        border-radius: 10px;
-    }
+        .productividad-table {
+            font-size: 0.8rem;
+        }
 
-    .progress-fill.alto {
-        background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-    }
-
-    .progress-fill.medio {
-        background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
-    }
-
-    .progress-fill.bajo {
-        background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
-    }
-
-    .progress-fill.muy_bajo {
-        background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
-    }
-
-    .persona-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .persona-stat {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #f3f4f6;
-    }
-
-    .persona-stat:last-child {
-        border-bottom: none;
-    }
-
-    .persona-stat-label {
-        color: #6b7280;
-        font-weight: 500;
-        font-size: 0.875rem;
-    }
-
-    .persona-stat-value {
-        font-weight: 700;
-        color: #1e293b;
-    }
-
-    .info-banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .info-banner-icon {
-        font-size: 1.5rem;
-    }
-
-    .info-banner-text {
-        flex: 1;
+        .productividad-table th,
+        .productividad-table td {
+            padding: 0.5rem;
+        }
     }
 
     @media (max-width: 768px) {
-        .personas-grid {
-            grid-template-columns: 1fr;
+        .page-header-compact {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .metrics-compact {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header-custom">
-    <h1>👥 Productividad por Persona</h1>
-    <p>Ocupación y disponibilidad del equipo</p>
+<!-- Header Compact -->
+<div class="page-header-compact">
+    <div>
+        <h1>👥 Productividad por Persona</h1>
+        <div class="subtitle">💡 Metodología: 7 horas diarias (Lunes a Viernes) • {{ stats.horas_disponibles_por_persona }}h disponibles/persona/mes</div>
+    </div>
+
+    <!-- Period Selector -->
+    <form class="period-selector" method="GET">
+        <label>Año:</label>
+        <select name="año" id="año">
+            {% for y in range(2024, 2027) %}
+            <option value="{{ y }}" {% if y == año %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Mes:</label>
+        <select name="mes" id="mes">
+            {% for m in range(1, 13) %}
+            <option value="{{ m }}" {% if m == mes %}selected{% endif %}>
+                {{ ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][m-1] }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Actualizar</button>
+    </form>
 </div>
 
-<!-- Info Banner -->
-<div class="info-banner">
-    <div class="info-banner-icon">💡</div>
-    <div class="info-banner-text">
-        <strong>Metodología:</strong> Se asumen 7 horas diarias asignables por persona en días hábiles (Lunes a Viernes)
-    </div>
-</div>
-
-<!-- Period Selector -->
-<form class="period-selector" method="GET">
-    <label style="color: #1e293b; font-weight: 600;">Año:</label>
-    <select name="año" id="año">
-        {% for y in range(2024, 2027) %}
-        <option value="{{ y }}" {% if y == año %}selected{% endif %}>{{ y }}</option>
-        {% endfor %}
-    </select>
-
-    <label style="color: #1e293b; font-weight: 600;">Mes:</label>
-    <select name="mes" id="mes">
-        {% for m in range(1, 13) %}
-        <option value="{{ m }}" {% if m == mes %}selected{% endif %}>
-            {{ ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][m-1] }}
-        </option>
-        {% endfor %}
-    </select>
-
-    <button type="submit">Actualizar</button>
-</form>
-
-<!-- Key Metrics -->
-<div class="dashboard-grid">
-    <div class="metric-card">
-        <div class="metric-icon">👥</div>
-        <div class="metric-label">Personal Activo</div>
-        <div class="metric-value">{{ stats.total_personas }}</div>
-        <div class="metric-sublabel">personas en equipo</div>
+<!-- Metrics Compact -->
+<div class="metrics-compact">
+    <div class="metric-compact">
+        <div class="metric-compact-label">👥 Personal</div>
+        <div class="metric-compact-value">{{ stats.total_personas }}</div>
     </div>
 
-    <div class="metric-card">
-        <div class="metric-icon">⏰</div>
-        <div class="metric-label">Horas Disponibles</div>
-        <div class="metric-value">{{ "%.0f"|format(stats.total_horas_disponibles) }}h</div>
-        <div class="metric-sublabel">{{ stats.horas_disponibles_por_persona }}h por persona</div>
+    <div class="metric-compact">
+        <div class="metric-compact-label">⏰ Disponibles</div>
+        <div class="metric-compact-value">{{ "%.0f"|format(stats.total_horas_disponibles) }}h</div>
     </div>
 
-    <div class="metric-card">
-        <div class="metric-icon">✅</div>
-        <div class="metric-label">Horas Asignadas</div>
-        <div class="metric-value">{{ "%.0f"|format(stats.total_horas_asignadas) }}h</div>
-        <div class="metric-sublabel">total registrado</div>
+    <div class="metric-compact">
+        <div class="metric-compact-label">✅ Asignadas</div>
+        <div class="metric-compact-value">{{ "%.0f"|format(stats.total_horas_asignadas) }}h</div>
     </div>
 
-    <div class="metric-card">
-        <div class="metric-icon">📊</div>
-        <div class="metric-label">Ocupación Total</div>
-        <div class="metric-value" style="color: {% if stats.total_porcentaje >= 80 %}#10b981{% elif stats.total_porcentaje >= 60 %}#f59e0b{% else %}#ef4444{% endif %};">
+    <div class="metric-compact">
+        <div class="metric-compact-label">📊 Ocupación</div>
+        <div class="metric-compact-value" style="color: {% if stats.total_porcentaje >= 80 %}#10b981{% elif stats.total_porcentaje >= 60 %}#f59e0b{% else %}#ef4444{% endif %};">
             {{ "%.1f"|format(stats.total_porcentaje) }}%
         </div>
-        <div class="metric-sublabel">del tiempo disponible</div>
     </div>
 
-    <div class="metric-card">
-        <div class="metric-icon">🆓</div>
-        <div class="metric-label">Horas Disponibles</div>
-        <div class="metric-value">{{ "%.0f"|format(stats.total_horas_restantes) }}h</div>
-        <div class="metric-sublabel">sin asignar</div>
+    <div class="metric-compact">
+        <div class="metric-compact-label">🆓 Restantes</div>
+        <div class="metric-compact-value">{{ "%.0f"|format(stats.total_horas_restantes) }}h</div>
     </div>
 </div>
 
-<!-- Personas Grid -->
-<div class="personas-grid">
-    {% for item in productividad_data %}
-    <div class="persona-card {{ item.estado }}">
-        <div class="persona-header">
-            <div class="persona-nombre">{{ item.persona.nombre }}</div>
-            <div class="persona-porcentaje {{ item.estado }}">{{ "%.1f"|format(item.porcentaje_ocupacion) }}%</div>
-        </div>
+<!-- Search Filter -->
+<div class="search-filter">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar persona...">
+</div>
 
-        <div class="progress-bar">
-            <div class="progress-fill {{ item.estado }}" style="width: {{ min(100, item.porcentaje_ocupacion) }}%;"></div>
-        </div>
-
-        <div class="persona-stats">
-            <div class="persona-stat">
-                <span class="persona-stat-label">⏰ Horas disponibles:</span>
-                <span class="persona-stat-value">{{ "%.0f"|format(item.horas_disponibles) }}h</span>
-            </div>
-            <div class="persona-stat">
-                <span class="persona-stat-label">✅ Horas asignadas:</span>
-                <span class="persona-stat-value">{{ "%.1f"|format(item.horas_asignadas) }}h</span>
-            </div>
-            <div class="persona-stat">
-                <span class="persona-stat-label">🆓 Horas restantes:</span>
-                <span class="persona-stat-value">{{ "%.1f"|format(item.horas_disponibles_restantes) }}h</span>
-            </div>
-            <div class="persona-stat">
-                <span class="persona-stat-label">📈 Ocupación:</span>
-                <span class="persona-stat-value {{ item.estado }}">{{ "%.1f"|format(item.porcentaje_ocupacion) }}%</span>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+<!-- Table -->
+<div class="table-container">
+    <table class="productividad-table" id="productividadTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Persona <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(1)" style="text-align: center;">Estado <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(2)" style="text-align: center;">Ocupación % <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(3)" style="text-align: center;">Visual <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(4)" style="text-align: right;">Horas Asignadas <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(5)" style="text-align: right;">Horas Restantes <span class="sort-icon">↕</span></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% for item in productividad_data %}
+            <tr>
+                <td>
+                    <div class="nombre-cell">
+                        <span class="status-indicator {{ item.estado }}"></span>
+                        {{ item.persona.nombre }}
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    {% if item.estado == 'alto' %}
+                        <span style="background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Alto</span>
+                    {% elif item.estado == 'medio' %}
+                        <span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Medio</span>
+                    {% elif item.estado == 'bajo' %}
+                        <span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Bajo</span>
+                    {% else %}
+                        <span style="background: #fecaca; color: #7f1d1d; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Muy Bajo</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <span class="porcentaje-cell {{ item.estado }}" data-value="{{ item.porcentaje_ocupacion }}">{{ "%.1f"|format(item.porcentaje_ocupacion) }}%</span>
+                </td>
+                <td style="padding: 0.5rem 1rem;">
+                    <div class="progress-bar-inline">
+                        <div class="progress-fill-inline {{ item.estado }}" style="width: {{ min(100, item.porcentaje_ocupacion) }}%;"></div>
+                    </div>
+                </td>
+                <td style="text-align: right;" data-value="{{ item.horas_asignadas }}">
+                    <strong>{{ "%.1f"|format(item.horas_asignadas) }}h</strong>
+                </td>
+                <td style="text-align: right;" data-value="{{ item.horas_disponibles_restantes }}">
+                    <span style="color: {% if item.horas_disponibles_restantes < 20 %}#ef4444{% elif item.horas_disponibles_restantes < 50 %}#f59e0b{% else %}#10b981{% endif %};">
+                        {{ "%.1f"|format(item.horas_disponibles_restantes) }}h
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Any additional scripts if needed
+// Search functionality
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchValue = this.value.toLowerCase();
+    const tableRows = document.querySelectorAll('#tableBody tr');
+
+    tableRows.forEach(row => {
+        const personaName = row.cells[0].textContent.toLowerCase();
+        if (personaName.includes(searchValue)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Sort table functionality
+let sortDirections = [1, 1, 1, 1, 1, 1]; // 1 = ascending, -1 = descending
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('productividadTable');
+    const tbody = document.getElementById('tableBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Toggle sort direction
+    sortDirections[columnIndex] *= -1;
+    const direction = sortDirections[columnIndex];
+
+    rows.sort((a, b) => {
+        let aValue, bValue;
+
+        if (columnIndex === 0) {
+            // Persona name (text)
+            aValue = a.cells[0].textContent.trim();
+            bValue = b.cells[0].textContent.trim();
+            return direction * aValue.localeCompare(bValue);
+        } else if (columnIndex === 1) {
+            // Estado (text)
+            const estados = { 'alto': 4, 'medio': 3, 'bajo': 2, 'muy bajo': 1 };
+            aValue = estados[a.cells[1].textContent.trim().toLowerCase()] || 0;
+            bValue = estados[b.cells[1].textContent.trim().toLowerCase()] || 0;
+        } else if (columnIndex === 2) {
+            // Ocupación % (numeric from data-value)
+            aValue = parseFloat(a.cells[2].querySelector('[data-value]').getAttribute('data-value'));
+            bValue = parseFloat(b.cells[2].querySelector('[data-value]').getAttribute('data-value'));
+        } else if (columnIndex === 3) {
+            // Visual (same as %)
+            aValue = parseFloat(a.cells[2].querySelector('[data-value]').getAttribute('data-value'));
+            bValue = parseFloat(b.cells[2].querySelector('[data-value]').getAttribute('data-value'));
+        } else if (columnIndex === 4 || columnIndex === 5) {
+            // Horas (numeric from data-value)
+            aValue = parseFloat(a.cells[columnIndex].getAttribute('data-value'));
+            bValue = parseFloat(b.cells[columnIndex].getAttribute('data-value'));
+        }
+
+        return direction * (aValue - bValue);
+    });
+
+    // Re-append rows in sorted order
+    rows.forEach(row => tbody.appendChild(row));
+
+    // Update sort icons
+    const headers = table.querySelectorAll('th');
+    headers.forEach((header, idx) => {
+        const icon = header.querySelector('.sort-icon');
+        if (icon) {
+            if (idx === columnIndex) {
+                icon.textContent = direction === 1 ? '↓' : '↑';
+                icon.style.opacity = '1';
+            } else {
+                icon.textContent = '↕';
+                icon.style.opacity = '0.5';
+            }
+        }
+    });
+}
+
+// Default sort by ocupación % (descending)
+window.addEventListener('DOMContentLoaded', () => {
+    sortDirections[2] = -1; // Set to descending
+    sortTable(2); // Sort by column 2 (Ocupación %)
+});
 </script>
 {% endblock %}
