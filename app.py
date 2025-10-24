@@ -1770,69 +1770,82 @@ def calcular_horas_disponibles_7h(año, mes):
 @socia_required
 def productividad_personas():
     """Panel de productividad por persona (% tiempo asignado vs disponible)"""
-    año = request.args.get('año', datetime.now().year, type=int)
-    mes = request.args.get('mes', datetime.now().month, type=int)
+    try:
+        print("[DEBUG] Iniciando productividad_personas()")
+        año = request.args.get('año', datetime.now().year, type=int)
+        mes = request.args.get('mes', datetime.now().month, type=int)
+        print(f"[DEBUG] Año: {año}, Mes: {mes}")
 
-    # Calcular horas disponibles en el mes (7h/día)
-    horas_disponibles_mes = calcular_horas_disponibles_7h(año, mes)
+        # Calcular horas disponibles en el mes (7h/día)
+        horas_disponibles_mes = calcular_horas_disponibles_7h(año, mes)
+        print(f"[DEBUG] Horas disponibles en el mes: {horas_disponibles_mes}")
 
-    # Obtener todas las personas activas
-    personas_activas = Persona.query.filter_by(activo=True).order_by(Persona.nombre).all()
+        # Obtener todas las personas activas
+        personas_activas = Persona.query.filter_by(activo=True).order_by(Persona.nombre).all()
+        print(f"[DEBUG] Personas activas encontradas: {len(personas_activas)}")
 
-    productividad_data = []
+        productividad_data = []
 
-    for persona in personas_activas:
-        # Calcular horas asignadas (registradas en el mes)
-        horas_asignadas = db.session.query(func.sum(RegistroHora.horas)).filter(
-            RegistroHora.persona_id == persona.id,
-            extract('year', RegistroHora.fecha) == año,
-            extract('month', RegistroHora.fecha) == mes
-        ).scalar() or 0
+        for persona in personas_activas:
+            print(f"[DEBUG] Procesando persona: {persona.nombre} (ID: {persona.id})")
+            # Calcular horas asignadas (registradas en el mes)
+            horas_asignadas = db.session.query(func.sum(RegistroHora.horas)).filter(
+                RegistroHora.persona_id == persona.id,
+                extract('year', RegistroHora.fecha) == año,
+                extract('month', RegistroHora.fecha) == mes
+            ).scalar() or 0
+            print(f"[DEBUG]   Horas asignadas: {horas_asignadas}")
 
-        # Calcular porcentaje de ocupación
-        porcentaje_ocupacion = (horas_asignadas / horas_disponibles_mes * 100) if horas_disponibles_mes > 0 else 0
+            # Calcular porcentaje de ocupación
+            porcentaje_ocupacion = (horas_asignadas / horas_disponibles_mes * 100) if horas_disponibles_mes > 0 else 0
 
-        # Calcular horas disponibles restantes
-        horas_disponibles_restantes = max(0, horas_disponibles_mes - horas_asignadas)
+            # Calcular horas disponibles restantes
+            horas_disponibles_restantes = max(0, horas_disponibles_mes - horas_asignadas)
 
-        # Determinar estado (para colorear en UI)
-        if porcentaje_ocupacion >= 90:
-            estado = 'alto'  # Verde
-        elif porcentaje_ocupacion >= 70:
-            estado = 'medio'  # Amarillo
-        elif porcentaje_ocupacion >= 50:
-            estado = 'bajo'  # Naranja
-        else:
-            estado = 'muy_bajo'  # Rojo
+            # Determinar estado (para colorear en UI)
+            if porcentaje_ocupacion >= 90:
+                estado = 'alto'  # Verde
+            elif porcentaje_ocupacion >= 70:
+                estado = 'medio'  # Amarillo
+            elif porcentaje_ocupacion >= 50:
+                estado = 'bajo'  # Naranja
+            else:
+                estado = 'muy_bajo'  # Rojo
 
-        productividad_data.append({
-            'persona': persona,
-            'horas_disponibles': horas_disponibles_mes,
-            'horas_asignadas': round(horas_asignadas, 1),
-            'porcentaje_ocupacion': round(porcentaje_ocupacion, 1),
-            'horas_disponibles_restantes': round(horas_disponibles_restantes, 1),
-            'estado': estado
-        })
+            productividad_data.append({
+                'persona': persona,
+                'horas_disponibles': horas_disponibles_mes,
+                'horas_asignadas': round(horas_asignadas, 1),
+                'porcentaje_ocupacion': round(porcentaje_ocupacion, 1),
+                'horas_disponibles_restantes': round(horas_disponibles_restantes, 1),
+                'estado': estado
+            })
 
-    # Calcular totales
-    total_horas_disponibles = len(personas_activas) * horas_disponibles_mes
-    total_horas_asignadas = sum(p['horas_asignadas'] for p in productividad_data)
-    total_porcentaje = (total_horas_asignadas / total_horas_disponibles * 100) if total_horas_disponibles > 0 else 0
+        # Calcular totales
+        total_horas_disponibles = len(personas_activas) * horas_disponibles_mes
+        total_horas_asignadas = sum(p['horas_asignadas'] for p in productividad_data)
+        total_porcentaje = (total_horas_asignadas / total_horas_disponibles * 100) if total_horas_disponibles > 0 else 0
 
-    stats = {
-        'total_personas': len(personas_activas),
-        'horas_disponibles_por_persona': horas_disponibles_mes,
-        'total_horas_disponibles': total_horas_disponibles,
-        'total_horas_asignadas': round(total_horas_asignadas, 1),
-        'total_porcentaje': round(total_porcentaje, 1),
-        'total_horas_restantes': round(total_horas_disponibles - total_horas_asignadas, 1)
-    }
+        stats = {
+            'total_personas': len(personas_activas),
+            'horas_disponibles_por_persona': horas_disponibles_mes,
+            'total_horas_disponibles': total_horas_disponibles,
+            'total_horas_asignadas': round(total_horas_asignadas, 1),
+            'total_porcentaje': round(total_porcentaje, 1),
+            'total_horas_restantes': round(total_horas_disponibles - total_horas_asignadas, 1)
+        }
 
-    return render_template('productividad_personas.html',
-                          productividad_data=productividad_data,
-                          stats=stats,
-                          año=año,
-                          mes=mes)
+        print("[DEBUG] Renderizando template productividad_personas.html")
+        return render_template('productividad_personas.html',
+                              productividad_data=productividad_data,
+                              stats=stats,
+                              año=año,
+                              mes=mes)
+    except Exception as e:
+        print(f"[ERROR] Error en productividad_personas(): {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return f"Error interno: {str(e)}", 500
 
 
 # ============= VALORIZACIÓN DE PROYECTOS =============
