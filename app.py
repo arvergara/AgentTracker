@@ -1327,8 +1327,16 @@ def editar_cliente(cliente_id):
         flash(f'Cliente {cliente.nombre} actualizado exitosamente', 'success')
         return redirect(url_for('ver_clientes'))
 
-    servicios = cliente.servicios.all()
-    return render_template('editar_cliente.html', cliente=cliente, servicios=servicios)
+    try:
+        servicios = cliente.servicios.all()
+        # Protección contra valores NULL en servicios
+        for servicio in servicios:
+            if servicio.valor_mensual_uf is None:
+                servicio.valor_mensual_uf = 0.0
+        return render_template('editar_cliente.html', cliente=cliente, servicios=servicios)
+    except Exception as e:
+        flash(f'Error al cargar servicios: {str(e)}', 'error')
+        return render_template('editar_cliente.html', cliente=cliente, servicios=[])
 
 
 @app.route('/cliente/<int:cliente_id>/servicio/nuevo', methods=['GET', 'POST'])
