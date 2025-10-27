@@ -1789,6 +1789,14 @@ def rentabilidad():
                           mes=mes)
 
 
+@app.route('/rentabilidad-areas')
+@socia_required
+def rentabilidad_areas():
+    """Análisis de rentabilidad por área (solo socias)"""
+    año_actual = datetime.now().year
+    return render_template('rentabilidad_areas.html', año_actual=año_actual)
+
+
 @app.route('/productividad')
 @socia_required
 def productividad():
@@ -2310,6 +2318,48 @@ def api_rentabilidad_por_area():
         utilidad = total_ingresos - total_costos
         margen_porcentaje = (utilidad / total_ingresos * 100) if total_ingresos > 0 else 0
 
+        # Obtener clientes que trabajaron en esta área
+        clientes_area = []
+        for cliente_id in clientes_ids:
+            cliente = Cliente.query.get(cliente_id)
+            if cliente:
+                horas_cliente_area_query = RegistroHora.query.filter_by(cliente_id=cliente_id, area_id=area.id).filter(
+                    extract('year', RegistroHora.fecha) == año
+                )
+                if mes:
+                    horas_cliente_area_query = horas_cliente_area_query.filter(extract('month', RegistroHora.fecha) == mes)
+
+                horas_cliente = sum(r.horas for r in horas_cliente_area_query.all())
+
+                if horas_cliente > 0:
+                    clientes_area.append({
+                        'nombre': cliente.nombre,
+                        'horas': round(horas_cliente, 1)
+                    })
+
+        # Obtener personas que trabajaron en esta área
+        personas_area = {}
+        for registro in registros_horas:
+            persona_id = registro.persona_id
+            if persona_id not in personas_area:
+                persona = Persona.query.get(persona_id)
+                if persona:
+                    personas_area[persona_id] = {
+                        'nombre': persona.nombre,
+                        'horas': 0,
+                        'costo_uf': 0
+                    }
+            personas_area[persona_id]['horas'] += registro.horas
+            personas_area[persona_id]['costo_uf'] += registro.costo_uf
+
+        # Convertir a lista y ordenar por horas
+        personas_lista = sorted(
+            [{'nombre': p['nombre'], 'horas': round(p['horas'], 1), 'costo_uf': round(p['costo_uf'], 1)}
+             for p in personas_area.values()],
+            key=lambda x: x['horas'],
+            reverse=True
+        )
+
         if total_ingresos > 0 or total_costos > 0:
             areas_rentabilidad.append({
                 'area': area.nombre,
@@ -2317,7 +2367,9 @@ def api_rentabilidad_por_area():
                 'costos_uf': round(total_costos, 1),
                 'utilidad_uf': round(utilidad, 1),
                 'margen': round(margen_porcentaje, 1),
-                'horas': round(total_horas, 1)
+                'horas': round(total_horas, 1),
+                'clientes': clientes_area,
+                'personas': personas_lista
             })
 
     # Ordenar por margen descendente
