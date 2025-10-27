@@ -270,12 +270,14 @@ class Persona(db.Model):
 
     # Jerarquía organizacional
     reporte_a_id = db.Column(db.Integer, db.ForeignKey('personas.id'), nullable=True)
+    area_principal_id = db.Column(db.Integer, db.ForeignKey('areas.id'), nullable=True)
 
     # Costos (en pesos chilenos)
     costo_mensual_empresa = db.Column(db.Float, nullable=False)  # Costo total mensual empresa
 
     # Relaciones
     registros_horas = db.relationship('RegistroHora', back_populates='persona', lazy='dynamic')
+    area_principal = db.relationship('Area', foreign_keys=[area_principal_id])
 
     # Relaciones jerárquicas
     supervisor = db.relationship('Persona', remote_side=[id], backref='subordinados', foreign_keys=[reporte_a_id])
