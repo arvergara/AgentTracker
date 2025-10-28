@@ -2360,17 +2360,28 @@ def api_rentabilidad_por_area():
             reverse=True
         )
 
-        if total_ingresos > 0 or total_costos > 0:
-            areas_rentabilidad.append({
-                'area': area.nombre,
-                'ingresos_uf': round(total_ingresos, 1),
-                'costos_uf': round(total_costos, 1),
-                'utilidad_uf': round(utilidad, 1),
-                'margen': round(margen_porcentaje, 1),
-                'horas': round(total_horas, 1),
-                'clientes': clientes_area,
-                'personas': personas_lista
-            })
+        # Agregar personas asignadas a esta área (según area_principal_id) aunque no hayan registrado horas
+        personas_asignadas = Persona.query.filter_by(area_principal_id=area.id, activo=True).all()
+        for persona in personas_asignadas:
+            # Si no está en la lista de personas que trabajaron, agregarla con 0 horas
+            if persona.id not in personas_area:
+                personas_lista.append({
+                    'nombre': persona.nombre,
+                    'horas': 0,
+                    'costo_uf': 0
+                })
+
+        # SIEMPRE agregar el área, incluso si no tiene datos
+        areas_rentabilidad.append({
+            'area': area.nombre,
+            'ingresos_uf': round(total_ingresos, 1),
+            'costos_uf': round(total_costos, 1),
+            'utilidad_uf': round(utilidad, 1),
+            'margen': round(margen_porcentaje, 1),
+            'horas': round(total_horas, 1),
+            'clientes': clientes_area,
+            'personas': personas_lista
+        })
 
     # Ordenar por margen descendente
     areas_rentabilidad.sort(key=lambda x: x['margen'], reverse=True)
