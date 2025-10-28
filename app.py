@@ -2403,8 +2403,11 @@ def api_rentabilidad_por_area():
     areas_rentabilidad.sort(key=lambda x: x['margen'], reverse=True)
 
     # Debug logging
-    print(f"[DEBUG] Rentabilidad áreas - Total áreas: {len(areas)}, Con datos: {len(areas_rentabilidad)}")
-    print(f"[DEBUG] Áreas rentabilidad: {areas_rentabilidad}")
+    print(f"[DEBUG] Rentabilidad áreas - Total áreas activas: {len(areas)}")
+    print(f"[DEBUG] Total áreas en resultado: {len(areas_rentabilidad)}")
+    print(f"[DEBUG] Áreas en resultado:")
+    for area in areas_rentabilidad:
+        print(f"  - {area['area']}: {area['horas']} horas, {area['ingresos_uf']} UF ingresos, {area['costos_uf']} UF costos")
 
     return jsonify(areas_rentabilidad)
 

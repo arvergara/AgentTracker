@@ -152,6 +152,8 @@
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
+                    console.log('✅ Áreas recibidas:', data.length);
+                    console.log('📊 Detalle:', data.map(a => `${a.area}: ${a.horas} horas`));
                     areasData = data;
                     mostrarStats(data);
                     mostrarTabla(data);
