@@ -116,7 +116,9 @@
                         <th>Área</th>
                         <th style="text-align: right;">Ingresos (UF)</th>
                         <th style="text-align: right;">Horas</th>
-                        <th style="text-align: right;">Costos (UF)</th>
+                        <th style="text-align: right;">Costos Directos (UF)</th>
+                        <th style="text-align: right;">Overhead (UF)</th>
+                        <th style="text-align: right;">Total Costos (UF)</th>
                         <th style="text-align: right;">Margen (UF)</th>
                         <th style="text-align: right;">Margen %</th>
                     </tr>
@@ -164,6 +166,8 @@
 
         function mostrarStats(data) {
             const totalIngresos = data.reduce((sum, a) => sum + a.ingresos_uf, 0);
+            const totalCostosDirectos = data.reduce((sum, a) => sum + (a.costos_directos_uf || 0), 0);
+            const totalOverhead = data.reduce((sum, a) => sum + (a.overhead_uf || 0), 0);
             const totalCostos = data.reduce((sum, a) => sum + a.costos_uf, 0);
             const totalMargen = totalIngresos - totalCostos;
             const margenPorcentaje = totalIngresos > 0 ? (totalMargen / totalIngresos * 100) : 0;
@@ -173,6 +177,14 @@
                     <h3>INGRESOS TOTALES</h3>
                     <div class="value">${formatoNumero(totalIngresos)} UF</div>
                 </div>
+                <div class="stat" style="background: linear-gradient(135deg, #3b82f6, #2563eb)">
+                    <h3>COSTOS DIRECTOS</h3>
+                    <div class="value">${formatoNumero(totalCostosDirectos)} UF</div>
+                </div>
+                <div class="stat" style="background: linear-gradient(135deg, #f59e0b, #d97706)">
+                    <h3>OVERHEAD</h3>
+                    <div class="value">${formatoNumero(totalOverhead)} UF</div>
+                </div>
                 <div class="stat">
                     <h3>COSTOS TOTALES</h3>
                     <div class="value">${formatoNumero(totalCostos)} UF</div>
@@ -181,10 +193,6 @@
                     <h3>MARGEN</h3>
                     <div class="value">${formatoNumero(totalMargen)} UF</div>
                     <p style="font-size: 18px; margin-top: 5px;">${formatoNumero(margenPorcentaje)}%</p>
-                </div>
-                <div class="stat">
-                    <h3>ÁREAS ACTIVAS</h3>
-                    <div class="value">${data.length}</div>
                 </div>
             `;
 
@@ -206,12 +214,14 @@
                         </td>
                         <td style="text-align: right;">${formatoNumero(area.ingresos_uf)}</td>
                         <td style="text-align: right;">${formatoNumero(area.horas)}</td>
-                        <td style="text-align: right;">${formatoNumero(area.costos_uf)}</td>
+                        <td style="text-align: right;">${formatoNumero(area.costos_directos_uf || 0)}</td>
+                        <td style="text-align: right; color: #f59e0b;">${formatoNumero(area.overhead_uf || 0)}</td>
+                        <td style="text-align: right; font-weight: 600;">${formatoNumero(area.costos_uf)}</td>
                         <td style="text-align: right;" class="${margenClass}">${formatoNumero(area.utilidad_uf)}</td>
                         <td style="text-align: right;" class="${margenClass}">${formatoNumero(area.margen)}%</td>
                     </tr>
                     <tr class="detalle-row" id="detalle-${index}">
-                        <td colspan="6">
+                        <td colspan="8">
                             <div class="detalle-container">
                                 ${generarDetalle(area)}
                             </div>

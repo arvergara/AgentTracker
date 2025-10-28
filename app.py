@@ -2238,11 +2238,16 @@ def api_rentabilidad_por_area():
     año = request.args.get('año', datetime.now().year, type=int)
     mes = request.args.get('mes', type=int)
 
+    # Calcular overhead total del período
+    overhead_data = calcular_overhead_distribuido(año, mes)
+    overhead_total_uf = overhead_data['overhead_total_uf']
+    total_horas_periodo = overhead_data['total_horas_asignadas']
+
     areas_rentabilidad = []
     areas = Area.query.filter_by(activo=True).all()
 
     for area in areas:
-        # Calcular costos (horas trabajadas en esta área)
+        # Calcular costos directos (horas trabajadas en esta área)
         query_horas = RegistroHora.query.filter_by(area_id=area.id).filter(
             extract('year', RegistroHora.fecha) == año
         )
@@ -2251,7 +2256,16 @@ def api_rentabilidad_por_area():
 
         registros_horas = query_horas.all()
         total_horas = sum(r.horas for r in registros_horas)
-        total_costos = sum(r.costo_uf for r in registros_horas)
+        costos_directos = sum(r.costo_uf for r in registros_horas)
+
+        # Calcular overhead proporcional del área
+        overhead_area = 0
+        if total_horas_periodo > 0:
+            proporcion_area = total_horas / total_horas_periodo
+            overhead_area = overhead_total_uf * proporcion_area
+
+        # Costo total = costos directos + overhead
+        total_costos = costos_directos + overhead_area
 
         # Calcular ingresos (sumando todos los ingresos de servicios en esta área)
         # Necesitamos obtener todos los servicios de esta área y sus ingresos
@@ -2375,6 +2389,8 @@ def api_rentabilidad_por_area():
         areas_rentabilidad.append({
             'area': area.nombre,
             'ingresos_uf': round(total_ingresos, 1),
+            'costos_directos_uf': round(costos_directos, 1),
+            'overhead_uf': round(overhead_area, 1),
             'costos_uf': round(total_costos, 1),
             'utilidad_uf': round(utilidad, 1),
             'margen': round(margen_porcentaje, 1),
