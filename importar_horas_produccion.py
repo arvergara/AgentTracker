@@ -219,7 +219,7 @@ def obtener_o_crear_tarea(conn, servicio_id, nombre_tarea):
 def verificar_registro_existe(conn, persona_id, cliente_id, fecha, horas):
     """Verifica si un registro ya existe"""
     result = conn.execute(text("""
-        SELECT id FROM registro_horas
+        SELECT id FROM registros_horas
         WHERE persona_id = :persona_id
           AND cliente_id = :cliente_id
           AND fecha = :fecha
@@ -285,7 +285,7 @@ def importar_registros(conn, df_excel, mapeo_personas):
                 continue
 
             conn.execute(text("""
-                INSERT INTO registro_horas (
+                INSERT INTO registros_horas (
                     persona_id, cliente_id, area_id, servicio_id, tarea_id,
                     fecha, horas, descripcion
                 ) VALUES (
@@ -334,7 +334,7 @@ def verificar_totales(conn):
 
     result = conn.execute(text("""
         SELECT COUNT(*), SUM(horas)
-        FROM registro_horas
+        FROM registros_horas
         WHERE fecha >= '2025-01-01' AND fecha < '2025-10-01'
     """))
     count, total_horas = result.fetchone()

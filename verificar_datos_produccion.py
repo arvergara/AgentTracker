@@ -42,7 +42,7 @@ def verificar_estado():
             print("=== TOTALES 2025 (ene-sep) ===\n")
             result = conn.execute(text("""
                 SELECT COUNT(*) as count, SUM(horas) as total_horas
-                FROM registro_horas
+                FROM registros_horas
                 WHERE fecha >= '2025-01-01' AND fecha < '2025-10-01'
             """))
             count, total_horas = result.fetchone()
@@ -71,7 +71,7 @@ def verificar_estado():
             print("=== TOP 10 CLIENTES POR HORAS (2025) ===\n")
             result = conn.execute(text("""
                 SELECT c.nombre, SUM(r.horas) as total_horas
-                FROM registro_horas r
+                FROM registros_horas r
                 JOIN clientes c ON r.cliente_id = c.id
                 WHERE r.fecha >= '2025-01-01' AND r.fecha < '2025-10-01'
                 GROUP BY c.id, c.nombre
@@ -89,7 +89,7 @@ def verificar_estado():
             print("=== TOP 10 PERSONAS POR HORAS (2025) ===\n")
             result = conn.execute(text("""
                 SELECT p.nombre, SUM(r.horas) as total_horas
-                FROM registro_horas r
+                FROM registros_horas r
                 JOIN personas p ON r.persona_id = p.id
                 WHERE r.fecha >= '2025-01-01' AND r.fecha < '2025-10-01'
                 GROUP BY p.id, p.nombre
