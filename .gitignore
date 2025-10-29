@@ -48,5 +48,8 @@ instance/
 *.xlsx
 *.pdf
 Historial*.csv
+
+# Excepción: permitir el Excel necesario para importación
+!Historial 2024-2025.xlsx
 datos_historicos.json
 exportar_datos_*.json
