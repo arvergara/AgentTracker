@@ -2267,23 +2267,31 @@ def api_rentabilidad_por_area():
         # Costo total = costos directos + overhead
         total_costos = costos_directos + overhead_area
 
-        # Calcular ingresos (sumando todos los ingresos de servicios en esta área)
-        # Necesitamos obtener todos los servicios de esta área y sus ingresos
-        total_ingresos = 0
-        servicios_area = Servicio.query.filter_by(area_id=area.id, activo=True).all()
+        # Calcular ingresos por área: basado en Facturación por área 2025
+        # Ingresos mensuales proyectados fijos por área (desde Excel)
+        # Total: 5,586.9 UF/mes (67,043 UF/año)
+        INGRESOS_MENSUALES_POR_AREA = {
+            'Externas': 3604.9,           # Comunicaciones externas
+            'Asuntos Públicos': 270.0,     # AAPP
+            'Redes Sociales': 874.4,       # Redes sociales
+            'Diseño': 292.6,               # Diseño
+            'Internas': 545.0              # Comunicaciones internas
+        }
 
-        for servicio in servicios_area:
-            # Obtener registros de horas de este servicio para saber qué clientes están asociados
-            registros_servicio = RegistroHora.query.filter_by(servicio_id=servicio.id).filter(
-                extract('year', RegistroHora.fecha) == año
-            )
-            if mes:
-                registros_servicio = registros_servicio.filter(extract('month', RegistroHora.fecha) == mes)
+        # Ingresos base mensuales del área
+        ingreso_mensual_area = INGRESOS_MENSUALES_POR_AREA.get(area.nombre, 0)
 
-            # Por ahora, vamos a calcular ingresos de forma proporcional
-            # basándonos en las horas trabajadas en cada cliente para esta área
+        # Si se pide un mes específico, usar el valor mensual
+        # Si se pide todo el año, multiplicar por meses transcurridos o 12
+        if mes:
+            total_ingresos = ingreso_mensual_area
+        else:
+            # Para el año completo: asumir proyección anual (12 meses)
+            # O calcular solo meses con datos reales
+            meses_con_datos = 10 if año == 2025 else 12  # ENE-OCT 2025
+            total_ingresos = ingreso_mensual_area * meses_con_datos
 
-        # Alternativa: calcular ingresos por cliente que tiene horas en esta área
+        # Obtener clientes que trabajaron en esta área (para el detalle)
         clientes_en_area = db.session.query(RegistroHora.cliente_id).filter(
             RegistroHora.area_id == area.id,
             extract('year', RegistroHora.fecha) == año
@@ -2292,41 +2300,6 @@ def api_rentabilidad_por_area():
             clientes_en_area = clientes_en_area.filter(extract('month', RegistroHora.fecha) == mes)
 
         clientes_ids = [c[0] for c in clientes_en_area.distinct().all()]
-
-        # Sumar ingresos de esos clientes de forma proporcional
-        for cliente_id in clientes_ids:
-            # Ingresos totales del cliente
-            ingresos_cliente_query = IngresoMensual.query.join(ServicioCliente).filter(
-                ServicioCliente.cliente_id == cliente_id,
-                IngresoMensual.año == año
-            )
-            if mes:
-                ingresos_cliente_query = ingresos_cliente_query.filter(IngresoMensual.mes == mes)
-
-            ingresos_cliente_total = sum(i.ingreso_uf for i in ingresos_cliente_query.all())
-
-            # Horas totales del cliente
-            horas_cliente_total_query = RegistroHora.query.filter_by(cliente_id=cliente_id).filter(
-                extract('year', RegistroHora.fecha) == año
-            )
-            if mes:
-                horas_cliente_total_query = horas_cliente_total_query.filter(extract('month', RegistroHora.fecha) == mes)
-
-            horas_cliente_total = sum(r.horas for r in horas_cliente_total_query.all())
-
-            # Horas del cliente en esta área
-            horas_cliente_area_query = RegistroHora.query.filter_by(cliente_id=cliente_id, area_id=area.id).filter(
-                extract('year', RegistroHora.fecha) == año
-            )
-            if mes:
-                horas_cliente_area_query = horas_cliente_area_query.filter(extract('month', RegistroHora.fecha) == mes)
-
-            horas_cliente_area = sum(r.horas for r in horas_cliente_area_query.all())
-
-            # Prorratear ingresos
-            if horas_cliente_total > 0:
-                proporcion = horas_cliente_area / horas_cliente_total
-                total_ingresos += ingresos_cliente_total * proporcion
 
         # Calcular margen
         utilidad = total_ingresos - total_costos
