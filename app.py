@@ -201,39 +201,42 @@ def calcular_overhead_distribuido(año, mes=None):
     # 3. Overhead total
     overhead_total_uf = overhead_operacional_uf + costo_horas_no_imputadas_uf
 
-    # 4. Calcular horas por cliente (OPTIMIZADO: 1 query agregada)
-    query_horas_por_cliente = db.session.query(
-        RegistroHora.cliente_id,
-        func.sum(RegistroHora.horas).label('total_horas')
+    # 4. Calcular ingresos por cliente (OPTIMIZADO: 1 query agregada)
+    # CAMBIO CRÍTICO: Distribuir overhead por INGRESOS, no por horas
+    query_ingresos_por_cliente = db.session.query(
+        ServicioCliente.cliente_id,
+        func.sum(IngresoMensual.ingreso_uf).label('total_ingresos')
+    ).join(
+        IngresoMensual, ServicioCliente.id == IngresoMensual.servicio_cliente_id
     ).filter(
-        extract('year', RegistroHora.fecha) == año
+        IngresoMensual.año == año
     )
 
     if mes:
-        query_horas_por_cliente = query_horas_por_cliente.filter(
-            extract('month', RegistroHora.fecha) == mes
+        query_ingresos_por_cliente = query_ingresos_por_cliente.filter(
+            IngresoMensual.mes == mes
         )
 
-    query_horas_por_cliente = query_horas_por_cliente.group_by(RegistroHora.cliente_id)
+    query_ingresos_por_cliente = query_ingresos_por_cliente.group_by(ServicioCliente.cliente_id)
 
-    # Diccionario: {cliente_id: horas}
-    horas_por_cliente = {}
-    total_horas_asignadas = 0
+    # Diccionario: {cliente_id: ingresos_uf}
+    ingresos_por_cliente = {}
+    total_ingresos = 0
 
-    for cliente_id, total_horas in query_horas_por_cliente.all():
-        horas_por_cliente[cliente_id] = total_horas
-        total_horas_asignadas += total_horas
+    for cliente_id, total_ingresos_cliente in query_ingresos_por_cliente.all():
+        ingresos_por_cliente[cliente_id] = total_ingresos_cliente
+        total_ingresos += total_ingresos_cliente
 
-    # 5. Distribuir overhead proporcionalmente por cliente
+    # 5. Distribuir overhead PROPORCIONALMENTE A LOS INGRESOS
     distribucion_por_cliente = {}
     clientes = Cliente.query.filter_by(activo=True).all()
 
     for cliente in clientes:
-        horas_cliente = horas_por_cliente.get(cliente.id, 0)
+        ingresos_cliente = ingresos_por_cliente.get(cliente.id, 0)
 
-        # Overhead proporcional
-        if total_horas_asignadas > 0:
-            porcentaje_cliente = horas_cliente / total_horas_asignadas
+        # Overhead proporcional a ingresos
+        if total_ingresos > 0:
+            porcentaje_cliente = ingresos_cliente / total_ingresos
             overhead_cliente = overhead_total_uf * porcentaje_cliente
         else:
             overhead_cliente = 0
@@ -245,7 +248,7 @@ def calcular_overhead_distribuido(año, mes=None):
         'overhead_operacional_pesos': round(total_overhead_pesos, 2),
         'overhead_operacional_uf': round(overhead_operacional_uf, 2),
         'overhead_horas_no_imputadas_uf': round(costo_horas_no_imputadas_uf, 2),
-        'total_horas_asignadas': round(total_horas_asignadas, 2),
+        'total_ingresos': round(total_ingresos, 2),  # Cambio: era total_horas_asignadas
         'distribucion_por_cliente': distribucion_por_cliente
     }
 
