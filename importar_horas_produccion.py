@@ -160,14 +160,13 @@ def obtener_o_crear_cliente(conn, nombre_cliente):
 
     tipo = 'spot' if 'spot' in nombre_cliente.lower() else 'permanente'
     result = conn.execute(text("""
-        INSERT INTO clientes (nombre, tipo, activo, fecha_inicio)
-        VALUES (:nombre, :tipo, :activo, :fecha_inicio)
+        INSERT INTO clientes (nombre, tipo, activo)
+        VALUES (:nombre, :tipo, :activo)
         RETURNING id
     """), {
         "nombre": nombre_cliente,
         "tipo": tipo,
-        "activo": True,
-        "fecha_inicio": datetime.now().date()
+        "activo": True
     })
     return result.fetchone()[0]
 
