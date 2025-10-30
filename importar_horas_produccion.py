@@ -43,7 +43,7 @@ if not DATABASE_URL:
 if DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
-# Mapeo de nombres: Excel -> BD
+# Mapeo de nombres de personas: Excel -> BD
 MAPEO_NOMBRES = {
     'Ángeles Pérez': 'María De Los Ángeles Pérez',
     'Andrés Azócar': 'Raúl Andrés Azócar',
@@ -56,6 +56,13 @@ MAPEO_NOMBRES = {
     'Víctor Guillou': 'Victor Guillou',
     'Hernan Díaz Diseño': 'Hernán Díaz',
     'Nicolás Campos': 'Nicolás Campos',
+}
+
+# Mapeo de nombres de clientes: Excel -> BD
+MAPEO_CLIENTES = {
+    'CLÍNICAS': 'EBM',
+    'FALABELLA': 'Falabella',
+    'EMBAJADA ITALIA': 'Embajada de Italia',
 }
 
 # Personas que deben ser creadas
@@ -130,9 +137,12 @@ def obtener_mapeo_personas(conn):
     return mapeo
 
 def mapear_area_excel_a_bd(area_excel):
-    """Mapea el área del Excel a un área existente en BD"""
+    """Mapea el área del Excel a un área existente en BD
+
+    Áreas en producción: Asuntos Públicos, Comunicaciones, Diseño, Externas, Internas, Redes Sociales
+    """
     if not area_excel or pd.isna(area_excel):
-        return 'Externas'
+        return 'Comunicaciones'  # Por defecto usa Comunicaciones (área general)
 
     area_excel = str(area_excel).strip().lower()
 
@@ -146,25 +156,33 @@ def mapear_area_excel_a_bd(area_excel):
         return 'Redes Sociales'
     elif 'diseño' in area_excel or 'design' in area_excel:
         return 'Diseño'
+    elif 'comunicacion' in area_excel:
+        return 'Comunicaciones'
     else:
-        return 'Externas'
+        return 'Comunicaciones'  # Por defecto
 
 def obtener_o_crear_cliente(conn, nombre_cliente):
     """Obtiene o crea un cliente"""
     nombre_cliente = nombre_cliente.strip()
 
-    result = conn.execute(text("SELECT id FROM clientes WHERE nombre = :nombre"), {"nombre": nombre_cliente})
+    # Aplicar mapeo de nombres si existe
+    nombre_cliente_bd = MAPEO_CLIENTES.get(nombre_cliente, nombre_cliente)
+
+    # Buscar cliente existente (case-insensitive)
+    result = conn.execute(text("SELECT id FROM clientes WHERE UPPER(nombre) = UPPER(:nombre)"),
+                          {"nombre": nombre_cliente_bd})
     row = result.fetchone()
     if row:
         return row[0]
 
-    tipo = 'spot' if 'spot' in nombre_cliente.lower() else 'permanente'
+    # Si no existe, crearlo con el nombre mapeado
+    tipo = 'spot' if 'spot' in nombre_cliente_bd.lower() else 'permanente'
     result = conn.execute(text("""
         INSERT INTO clientes (nombre, tipo, activo)
         VALUES (:nombre, :tipo, :activo)
         RETURNING id
     """), {
-        "nombre": nombre_cliente,
+        "nombre": nombre_cliente_bd,
         "tipo": tipo,
         "activo": True
     })
