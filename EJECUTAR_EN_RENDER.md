@@ -1,18 +1,30 @@
 # Instrucciones para Ejecutar Importación en Render
 
-## Problema Identificado
+## Problemas Identificados y Corregidos
 
-El script anterior fallaba porque:
-1. **Error en transacción SQL**: Cuando ocurría un error (ej: cliente "Capstone Copper"), la transacción PostgreSQL quedaba abortada
-2. **Falta de rollback**: El script no hacía `rollback()` después de errores, causando que todos los comandos posteriores fallaran
-3. **Error crítico**: `(psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block`
+### Problema 1: Transacciones abortadas (Commit 4ac362c)
+El script fallaba porque:
+1. **Error en transacción SQL**: Cuando ocurría un error, la transacción PostgreSQL quedaba abortada
+2. **Falta de rollback**: El script no hacía `rollback()` después de errores
+3. **Error**: `(psycopg2.errors.InFailedSqlTransaction) current transaction is aborted`
 
-## Corrección Aplicada (Commit 4ac362c)
-
+**Solución**:
 ✅ Agregado `conn.rollback()` en el bloque de error
 ✅ Captura detallada de errores (cliente, persona)
 ✅ Limitado output a primeros 10 errores
 ✅ Script de diagnóstico agregado (`diagnostico_render.py`)
+
+### Problema 2: Secuencias PostgreSQL desincronizadas (Commit adb5705)
+El script fallaba con:
+1. **Error**: `duplicate key value violates unique constraint "servicios_pkey"`
+2. **Causa**: Las secuencias de PostgreSQL no estaban sincronizadas con los IDs máximos
+3. **Resultado**: Intentaba insertar con IDs que ya existían (19, 20, 21, etc.)
+
+**Solución**:
+✅ Agregada función `arreglar_secuencias()` que sincroniza todas las secuencias
+✅ Ejecuta automáticamente al inicio del script de importación
+✅ Script standalone `arreglar_secuencias.py` para uso independiente
+✅ Sincroniza: personas, clientes, areas, servicios, tareas, registros_horas
 
 ## Pasos para Ejecutar en Render Shell
 
@@ -49,13 +61,25 @@ Esto mostrará:
 - ✅ Registros actuales de horas (2025)
 - ✅ Verificación de clientes del Excel
 
-### 5. Ejecutar Importación Corregida
+### 5. Arreglar Secuencias de PostgreSQL (CRÍTICO)
+
+**NUEVO**: Antes de importar, ejecuta esto para evitar errores de "duplicate key":
+
+```bash
+python3 arreglar_secuencias.py
+```
+
+Esto sincroniza las secuencias auto-incrementales con los IDs existentes.
+
+### 6. Ejecutar Importación Corregida
 
 ```bash
 python3 importar_horas_produccion.py
 ```
 
-### 6. Verificar Resultados
+**Nota**: El script ahora arregla las secuencias automáticamente, pero si aún ves errores de "duplicate key", ejecuta `arreglar_secuencias.py` primero.
+
+### 7. Verificar Resultados
 
 ```bash
 python3 verificar_datos_produccion.py
