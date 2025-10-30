@@ -77,6 +77,32 @@ PERSONAS_NUEVAS = [
     'Nicolás Campos',
 ]
 
+def arreglar_secuencias(conn):
+    """Arregla las secuencias de PostgreSQL para evitar errores de duplicate key"""
+    print("\n=== ARREGLANDO SECUENCIAS DE POSTGRESQL ===\n")
+
+    tablas_con_secuencia = [
+        ('personas', 'personas_id_seq'),
+        ('clientes', 'clientes_id_seq'),
+        ('areas', 'areas_id_seq'),
+        ('servicios', 'servicios_id_seq'),
+        ('tareas', 'tareas_id_seq'),
+        ('registros_horas', 'registros_horas_id_seq'),
+    ]
+
+    for tabla, secuencia in tablas_con_secuencia:
+        try:
+            # Sincronizar secuencia con el máximo ID actual
+            conn.execute(text(f"""
+                SELECT setval('{secuencia}', (SELECT COALESCE(MAX(id), 1) FROM {tabla}), true)
+            """))
+            print(f"  ✓ Secuencia '{secuencia}' sincronizada")
+        except Exception as e:
+            print(f"  ⚠️  No se pudo sincronizar '{secuencia}': {e}")
+
+    conn.commit()
+    print("\n  Secuencias arregladas\n")
+
 def crear_personas_faltantes(conn):
     """Crea personas que no existen en la BD"""
     print("\n=== CREANDO PERSONAS FALTANTES ===\n")
@@ -392,6 +418,9 @@ def main():
 
     try:
         with engine.connect() as conn:
+            # 0. Arreglar secuencias de PostgreSQL
+            arreglar_secuencias(conn)
+
             # 1. Crear personas faltantes
             crear_personas_faltantes(conn)
 
