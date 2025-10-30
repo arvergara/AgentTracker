@@ -264,6 +264,7 @@ def importar_registros(conn, df_excel, mapeo_personas):
     registros_duplicados = 0
     registros_error = 0
     personas_sin_match = set()
+    errores_detallados = []
 
     for idx, row in df_2025.iterrows():
         if idx % 5000 == 0 and idx > 0:
@@ -323,7 +324,13 @@ def importar_registros(conn, df_excel, mapeo_personas):
             registros_importados += 1
 
         except Exception as e:
-            print(f"    ⚠️  Error en fila {idx}: {e}")
+            # Si hay error, hacer rollback y continuar
+            conn.rollback()
+            error_msg = f"Cliente: {row.get('Client', 'N/A')}, Persona: {row.get('NombreCompleto', 'N/A')}"
+            errores_detallados.append((idx, str(e), error_msg))
+            if len(errores_detallados) <= 10:  # Solo mostrar primeros 10
+                print(f"    ⚠️  Error en fila {idx}: {e}")
+                print(f"        {error_msg}")
             registros_error += 1
             continue
 
@@ -342,6 +349,10 @@ def importar_registros(conn, df_excel, mapeo_personas):
         print(f"\n  ⚠️  Personas sin match ({len(personas_sin_match)}):")
         for persona in sorted(personas_sin_match)[:10]:
             print(f"    - {persona}")
+
+    if errores_detallados and len(errores_detallados) > 10:
+        print(f"\n  ⚠️  Total de errores SQL: {len(errores_detallados)}")
+        print(f"      (Se mostraron solo los primeros 10 arriba)")
 
     return registros_importados
 
