@@ -227,8 +227,10 @@ GROUP BY cliente_id, area_id
    ```
 
 2. **Gastos operacionales mensuales**:
-   ```
-   Incluye (de Flujo de Caja 2025):
+
+   **FUENTE**: Planilla Flujo de Caja Comsulting 2025.xlsx, hoja "2025", **Fila 119**
+
+   **¿Qué incluye?** (antes de remuneraciones):
    - Arriendo oficinas (UF 239.7 total = 123 + 116.7)
    - Suscripciones (Litoralpress, Talkwalker, G100, etc.)
    - Servicios externalizados (contador, aseo, soporte)
@@ -238,7 +240,20 @@ GROUP BY cliente_id, area_id
    - Caja chica
    - Etc.
 
-   Total gastos operacionales = (Fila 119 - Costos de sueldos)
+   **Valores 2025** (Fila 119, columnas 3-11):
+   ```
+   Enero:      140,860,927 pesos = 3,706.87 UF
+   Febrero:    143,080,026 pesos = 3,765.26 UF
+   Marzo:      148,295,997 pesos = 3,902.53 UF
+   Abril:      149,497,448 pesos = 3,934.14 UF
+   Mayo:       142,913,469 pesos = 3,760.88 UF
+   Junio:      151,249,384 pesos = 3,980.25 UF
+   Julio:      146,459,826 pesos = 3,854.21 UF
+   Agosto:     136,211,970 pesos = 3,584.53 UF
+   Septiembre: 142,724,307 pesos = 3,755.90 UF
+
+   TOTAL (Ene-Sep): 1,301,293,354 pesos = 34,244.56 UF
+   Promedio mensual: 144,588,150 pesos = 3,804.95 UF/mes
    ```
 
 3. **Total Overhead mes**:
